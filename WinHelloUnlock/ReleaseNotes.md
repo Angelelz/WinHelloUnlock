@@ -1,3 +1,3 @@
-﻿# [WinHello 0.9](https://github.com/sirAndros/KeePassWinHello/releases/tag/2.2)
+﻿# [WinHello 0.95](https://github.com/Angelelz/WinHelloUnlock/releases/tag/0.95)
 
 Initial Release.

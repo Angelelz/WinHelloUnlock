@@ -4,3 +4,5 @@
 
 /.vs/WinHelloUnlock/v15/Server/sqlite3
 /.vs
+/WinHelloUnlock/bin/Debug
+/WinHelloUnlock/obj

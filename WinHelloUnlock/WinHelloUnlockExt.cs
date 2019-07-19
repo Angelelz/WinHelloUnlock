@@ -31,6 +31,11 @@ namespace WinHelloUnlock
             get { return Properties.Resources.windows_hello16x16; }
         }
 
+        public override string UpdateUrl
+        {
+            get { return "https://github.com/Angelelz/WinHelloUnlock/raw/master/WinHelloUnlock/keepass.version"; }
+        }
+
         public override bool Initialize(IPluginHost _host)
         {
             if (host != null)

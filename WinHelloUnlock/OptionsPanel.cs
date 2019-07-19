@@ -94,7 +94,7 @@ namespace WinHelloUnlock
         /// <summary>Opens the readme.</summary>
 		private void HelpButton_Click(object sender, EventArgs e)
         {
-            Process.Start("https://github.com/KN4CK3R/KeePassQuickUnlock/blob/master/README.md");
+            Process.Start("https://github.com/Angelelz/WinHelloUnlock/blob/master/ReadMe.md");
         }
 
         private async void CreateButton_Click(object sender, EventArgs e)
