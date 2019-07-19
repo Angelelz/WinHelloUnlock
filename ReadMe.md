@@ -38,7 +38,7 @@ Place [WinHelloUnlock.dll][binLink] into `Plugins` folder in your KeePass instal
 Setup
 -----
 
-After installation, open your database and unlock it using your composite key. Unlocking with any combination of Password/KeyFile/WindowsUserAccount is supported.
+After installation, open your database and unlock it using your composite key. Unlocking with any combination of Password/KeyFile/WindowsUserAccount is supported. Secure Desktop is supported.
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/ToUnlock.png" width=500/>
 
@@ -77,6 +77,8 @@ To decrypt this data, you need to:
 * Be able to Cryptographically sign the Cryptographic Key with Windows Hello
 
 So basically, you need to have access to the data, the hardware and the biometrics (or pin).
+
+As I said, I'm not a programmer, so any criticism will be well received. Feel free to commit any change or PR. I will start commenting the code soon.
 
 Credits
 -------
