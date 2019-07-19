@@ -6,7 +6,7 @@ This plugin for [KeePass 2][KeePass] password manager is intended to convenientl
 [KeePass]: https://keepass.info/
 [WinHello]: https://support.microsoft.com/en-us/help/17215/windows-10-what-is-hello
 
-This plugin is heavily based on [KeePassWinHello][KeePassWinHello] and [KeePassQuickUnlock][QuickUnlock]. I am not a programmer, so I copied most of the code from them, but implemented a different way of storing the MasterKey data to allow plugin functionality, even afer rebooting your computer, using Password Vault, Pasword Credentials and Key Credentials from Windows UWP APIs.
+This plugin is heavily based on [KeePassWinHello][KeePassWinHello] and [KeePassQuickUnlock][QuickUnlock]. I am not a programmer, so I copied most of the code from them, but implemented a different way of storing the MasterKey data to allow plugin functionality, even after rebooting your computer, using Password Vault, Password Credentials and Key Credentials from Windows UWP APIs.
 
 [KeePassWinHello]: https://github.com/sirAndros/KeePassWinHello
 [QuickUnlock]: https://github.com/JanisEst/KeePassQuickUnlock
@@ -16,7 +16,7 @@ Usage
 
 With this plugin you may:
 
-Unlock your database using Biometric via Windows Hello. Even after completly closing KeePass or rebooting your PC.
+Unlock your database using Biometric via Windows Hello. Even after completely closing KeePass or rebooting your PC.
 
 Systems Requirements
 --------------------
@@ -38,7 +38,7 @@ Place [WinHelloUnlock.dll][binLink] into `Plugins` folder in your KeePass instal
 Setup
 -----
 
-After instalation, open your database and unlock it using your composite key. Unlocking with any combination of Password/KeyFile/WindowsUserAccount is supported.
+After installation, open your database and unlock it using your composite key. Unlocking with any combination of Password/KeyFile/WindowsUserAccount is supported.
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/ToUnlock.png" width=500/>
 
@@ -46,11 +46,11 @@ When your database is unlocked, you will be asked if you want to set up WinHello
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/FirstPrompt.png" width=500/>
 
-A Windows Hello prompt will be shown to crypographically sign and encrypt your Master Key data.
+A Windows Hello prompt will be shown to cryptographically sign and encrypt your Master Key data.
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/WinHello.png" width=500/>
 
-You should recieve a confirmation after a successfull set up.
+You should receive a confirmation after a successful set up.
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/Confirmation.png" width=500/>
 
@@ -63,7 +63,7 @@ The plugin integrates itself into the KeePass settings dialog.
 
 Available settings:
 
-* Enable or disable the plugin for this particular database. If you disable it, you will not be asked to set WinHelloUnlock everytime you unlock your database.
+* Enable or disable the plugin for this particular database. If you disable it, you will not be asked to set WinHelloUnlock every time you unlock your database.
 * Create or delete WinHelloUnlock data for this particular database.
 
 Notes
@@ -74,7 +74,7 @@ KeePass Composite Key data is *Encrypted* with a *Cryptographic Key* signed with
 To decrypt this data, you need to:
 * Have access to the Password Vault
 * Have access to the Cryptographic Key
-* Be able to Cryptographicaly sign the Cryptographic Key with Windows Hello
+* Be able to Cryptographically sign the Cryptographic Key with Windows Hello
 
 So basically, you need to have access to the data, the hardware and the biometrics (or pin).
 
