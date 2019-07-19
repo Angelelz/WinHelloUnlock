@@ -8,6 +8,9 @@ This plugin for [KeePass 2][KeePass] password manager is intended to convenientl
 
 This plugin is heavily based on [KeePassWinHello][KeePassWinHello] and [KeePassQuickUnlock][QuickUnlock]. I am not a programmer, so I copied most of the code from them, but implemented a different way of storing the MasterKey data to allow plugin functionality, even afer rebooting your computer, using Password Vault, Pasword Credentials and Key Credentials from Windows UWP APIs.
 
+[KeePassWinHello]: https://github.com/sirAndros/KeePassWinHello
+[QuickUnlock]: https://github.com/JanisEst/KeePassQuickUnlock
+
 Usage
 -----
 
