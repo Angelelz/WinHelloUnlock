@@ -104,7 +104,7 @@ namespace WinHelloUnlock
         {
             database = KeePass.Program.MainForm.ActiveDatabase;
             dbName = database.IOConnectionInfo.Path;
-            bool secureDesktop = false;
+            bool secureDesktopChanged = false;
 
             if (e.Form is KeyPromptForm keyPromptForm)
             {
@@ -115,7 +115,7 @@ namespace WinHelloUnlock
 
                 if (!await UWPLibrary.FirstTime(dbName) && isHelloAvailable)
                 {
-                    Library.UnlockDatabase(ioInfo, dbName, keyPromptForm, secureDesktop);
+                    Library.UnlockDatabase(ioInfo, dbName, keyPromptForm, secureDesktopChanged);
                 }
                 else if (!await UWPLibrary.FirstTime(dbName))
                 {

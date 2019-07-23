@@ -9,6 +9,10 @@ namespace WinHelloUnlock
     {
         public static string db = WinHelloUnlockExt.dbName;
         private static string onOpenEnabled = "";
+
+        /// <summary>
+        /// Options Panel class with all WinHelloUnlock options
+        /// </summary>
         public OptionsPanel()
         {
             InitializeComponent();
@@ -97,6 +101,7 @@ namespace WinHelloUnlock
             Process.Start("https://github.com/Angelelz/WinHelloUnlock/blob/master/ReadMe.md");
         }
 
+        /// <summary>Creates WinHelloUnock data when the Create Button is clicked.</summary>
         private async void CreateButton_Click(object sender, EventArgs e)
         {
             bool check = checkBox.Checked;
@@ -107,6 +112,7 @@ namespace WinHelloUnlock
             if (created) infoLabel.Text = "WinHelloUnlock is configured for this Database";
         }
 
+        /// <summary>Deletes WinHelloUnock data when the Delete Button is clicked.</summary>
         private async void DeleteteButton_Click(object sender, EventArgs e)
         {
             bool check = checkBox.Checked;
@@ -118,6 +124,7 @@ namespace WinHelloUnlock
             if (first2) infoLabel.Text = "WinHelloUnlock is NOT configured for this Database";
         }
 
+        /// <summary>Updates the form when the CheckBox is clicked.</summary>
         private void CheckBox_Change(object sender, EventArgs e)
         {
             Task<bool> firstTime = Task.Run(async () =>
