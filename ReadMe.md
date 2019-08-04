@@ -11,6 +11,11 @@ This plugin is heavily based on [KeePassWinHello][KeePassWinHello] and [KeePassQ
 [KeePassWinHello]: https://github.com/sirAndros/KeePassWinHello
 [QuickUnlock]: https://github.com/JanisEst/KeePassQuickUnlock
 
+Disclaimer
+-----
+
+I tried my best to not compromise security! Please, take a look at the code and tell me what could be better. Having said that, we know nothing about Windows Hello internals, and how secure it actually is. By using this plugin, you are putting your trust in my implementation of Windows Hello technology (that you can check on the code), and Windows Hello robustness itself (that you cannot check).
+
 Usage
 -----
 
