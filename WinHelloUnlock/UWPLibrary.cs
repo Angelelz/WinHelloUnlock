@@ -107,31 +107,31 @@ namespace WinHelloUnlock
         /// Post warnings according to the results of credential operations.
         /// </summary>
         /// <param name="verif">Status of credential operation result to post.</param>
-        internal static void WinHelloErrors(KeyCredentialRetrievalResult verif)
+        internal static void WinHelloErrors(KeyCredentialStatus verif, string initialString)
         {
-            switch (verif.Status)
+            switch (verif)
             {
                 case (KeyCredentialStatus.CredentialAlreadyExists):
-                    MessageService.ShowWarning("The credential already exists.");
+                    MessageService.ShowWarning(initialString + "The credential already exists.");
                     break;
                 case (KeyCredentialStatus.NotFound):
-                    MessageService.ShowWarning("The credential could not be found.");
+                    MessageService.ShowWarning(initialString + "The credential could not be found.");
                     break;
                 case (KeyCredentialStatus.SecurityDeviceLocked):
-                    MessageService.ShowWarning("The security device was locked.");
+                    MessageService.ShowWarning(initialString + "The security device was locked.");
 
                     break;
                 case (KeyCredentialStatus.UnknownError):
-                    MessageService.ShowWarning("An unknown error occurred.");
+                    MessageService.ShowWarning(initialString + "An unknown error occurred.");
                     break;
                 case (KeyCredentialStatus.UserCanceled):
-                    MessageService.ShowWarning("The request was cancelled by the user.");
+                    MessageService.ShowWarning(initialString + "The request was cancelled by the user.");
                     break;
                 case (KeyCredentialStatus.UserPrefersPassword):
-                    MessageService.ShowWarning("The user prefers to enter a password.");
+                    MessageService.ShowWarning(initialString + "The user prefers to enter a password.");
                     break;
                 default:
-                    MessageService.ShowWarning("An Error prevented Windows Hello from completing the operation.");
+                    MessageService.ShowWarning(initialString + "An Error prevented Windows Hello from completing the operation.");
                     break;
             }
         }
@@ -189,8 +189,13 @@ namespace WinHelloUnlock
             {
                 string encrypted = newCredential.Password;
                 string decrypted = await Decrypt(encrypted, rResult);
-                KeyList Keys = Library.ConvertKeyList(decrypted);
-                return Keys;
+                if (decrypted != "")
+                {
+                    KeyList Keys = Library.ConvertKeyList(decrypted);
+                    decrypted = "";
+                    return Keys;
+                }
+                else return new KeyList(null, null);
             }
             catch (Exception ev)
             {
@@ -241,16 +246,24 @@ namespace WinHelloUnlock
 
             // The actual Signing of the string
             KeyCredentialOperationResult opResult = await rResult.Credential.RequestSignAsync(buffMsg);
-            IBuffer signedData = opResult.Result;
+            if (opResult.Status == KeyCredentialStatus.Success)
+            {
+                IBuffer signedData = opResult.Result;
 
-            // Creation of the key with the signed string
-            SymmetricKeyAlgorithmProvider provider = SymmetricKeyAlgorithmProvider.OpenAlgorithm(SymmetricAlgorithmNames.AesEcbPkcs7);
-            CryptographicKey myKey = provider.CreateSymmetricKey(signedData);
+                // Creation of the key with the signed string
+                SymmetricKeyAlgorithmProvider provider = SymmetricKeyAlgorithmProvider.OpenAlgorithm(SymmetricAlgorithmNames.AesEcbPkcs7);
+                CryptographicKey myKey = provider.CreateSymmetricKey(signedData);
 
-            // Decryption of the data using the key created (mKey)
-            IBuffer buffProtected = CryptographicBuffer.DecodeFromBase64String(strProtected);
-            IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
-            return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
+                // Decryption of the data using the key created (mKey)
+                IBuffer buffProtected = CryptographicBuffer.DecodeFromBase64String(strProtected);
+                IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
+                return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
+            }
+            else
+            {
+                WinHelloErrors(opResult.Status, "Error decrypting the data: ");
+                return "";
+            }
         }
 
         /// <summary>
@@ -318,7 +331,7 @@ namespace WinHelloUnlock
                         }
                         else
                         {
-                            UWPLibrary.WinHelloErrors(retrievalResult);
+                            WinHelloErrors(retrievalResult.Status, "Error creating the credential: ");
                         }
                     }
                     else
@@ -357,6 +370,7 @@ namespace WinHelloUnlock
                     CompositeKey compositeKey = Library.ConvertToComposite(keyList);
                     Library.SetCompositeKey(keyPromptForm, compositeKey);
                     Library.CloseFormWithResult(keyPromptForm, DialogResult.OK);
+                    compositeKey = null;
                 }
                 else
                 {
@@ -368,10 +382,11 @@ namespace WinHelloUnlock
                         mainForm.Invoke(action);
                     });
                 }
+                keyList = new KeyList(null, null);
             }
             else
             {
-                UWPLibrary.WinHelloErrors(retrievalResult);
+                UWPLibrary.WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
                 Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                 ++WinHelloUnlockExt.tries;
                 await Task.Factory.StartNew(() => {
