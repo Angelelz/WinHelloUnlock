@@ -11,6 +11,11 @@ This plugin is heavily based on [KeePassWinHello][KeePassWinHello] and [KeePassQ
 [KeePassWinHello]: https://github.com/sirAndros/KeePassWinHello
 [QuickUnlock]: https://github.com/JanisEst/KeePassQuickUnlock
 
+Disclaimer
+-----
+
+I tried my best to not compromise security! Please, take a look at the code and tell me what could be better. Having said that, we know nothing about Windows Hello internals, and how secure it actually is. By using this plugin, you are putting your trust in my implementation of Windows Hello technology (that you can check on the code), and Windows Hello robustness itself (that you cannot check).
+
 Usage
 -----
 
@@ -78,7 +83,7 @@ To decrypt this data, you need to:
 
 So basically, you need to have access to the data, the hardware and the biometrics (or pin).
 
-As I said, I'm not a programmer, so any criticism will be well received. Feel free to commit any change or PR. I will start commenting the code soon.
+As I said, I'm not a programmer, so any criticism will be well received. Feel free to commit any change or PR.
 
 Credits
 -------
@@ -86,3 +91,10 @@ Credits
 * _Microsoft_ for [Windows Hello][WinHello] technology
 * _JanisEst_ and his [KeePassQuickUnlock](https://github.com/JanisEst/KeePassQuickUnlock)
 * _sirAndros_ and his [KeePassWinHello](https://github.com/sirAndros/KeePassWinHello)
+
+WinHelloUnlock vs KeePassWinHello
+-------
+
+By the time this plugin was created, KeePassWinHello did not have to option to remain active after Keepass is completly closed, so that was the main reason for it to be crated in the first place. I think they were working on that option, but I could not help them beacuse I did not understand most of their code (Way too advanced implementation for a beginner like me). I think they save the MasterKey info in memory, but WinHelloUnlock saves it encrypted to a Windows Password Credential.
+
+WinHelloUnlock does not implement a way for the credential to expire (like KeePassWinHello do), but implements a way for the credential to be deleted by the user.
