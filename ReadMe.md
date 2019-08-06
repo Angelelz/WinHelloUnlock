@@ -45,19 +45,19 @@ Setup
 
 After installation, open your database and unlock it using your composite key. Unlocking with any combination of Password/KeyFile/WindowsUserAccount is supported. Secure Desktop is supported.
 
-<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/ToUnlock.png" width=500/>
+<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/ToUnlock.png" width=770/>
 
 When your database is unlocked, you will be asked if you want to set up WinHelloUnlock.
 
-<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/FirstPrompt.png" width=500/>
+<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/FirstPrompt.png" width=381/>
 
 A Windows Hello prompt will be shown to cryptographically sign and encrypt your Master Key data.
 
-<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/WinHello.png" width=500/>
+<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/WinHello.png" width=449/>
 
 You should receive a confirmation after a successful set up.
 
-<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/Confirmation.png" width=500/>
+<img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/Confirmation.png" width=258/>
 
 Options
 -------
