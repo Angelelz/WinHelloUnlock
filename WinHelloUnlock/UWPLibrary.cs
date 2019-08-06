@@ -278,7 +278,7 @@ namespace WinHelloUnlock
             }
             else
             {
-                WinHelloUnlockExt.opened = false;
+                WinHelloUnlockExt.opened = true;
                 WinHelloErrors(opResult.Status, "Error decrypting the data: ");
                 return "";
             }
@@ -410,12 +410,12 @@ namespace WinHelloUnlock
                 compositeKey = null;
 
                 keyList = new KeyList(null, null);
-                WinHelloUnlockExt.opened = false;
+                WinHelloUnlockExt.opened = true;
             }
             else
             {
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                WinHelloUnlockExt.opened = false;
+                WinHelloUnlockExt.opened = true;
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
             }
         }
