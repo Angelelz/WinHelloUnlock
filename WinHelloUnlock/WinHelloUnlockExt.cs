@@ -94,7 +94,6 @@ namespace WinHelloUnlock
 
             await UWPLibrary.CreateHelloData(dbName);
             tries = 0;
-            opened = true;
             
         }
 
@@ -116,7 +115,10 @@ namespace WinHelloUnlock
                 if (!await UWPLibrary.FirstTime(dbName) && isHelloAvailable)
                 {
                     if (opened)
+                    {
+                        opened = false;
                         Library.UnlockDatabase(ioInfo, keyPromptForm);
+                    }
                     else
                         Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                 }

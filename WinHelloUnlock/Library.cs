@@ -10,12 +10,21 @@ using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Linq;
 using KeePass.Forms;
-
+using System.Runtime.InteropServices;
 
 namespace WinHelloUnlock
 {
     public class Library
     {
+
+        [DllImport("user32.dll")]
+        internal static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        internal static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         /// <summary>
         /// Convert the composite key to a KeyList class
@@ -168,7 +177,6 @@ namespace WinHelloUnlock
         /// <param name="secureDesktopChanged">Bool that represents if secure desktop had been changed by the plugin.</param>
         internal async static void UnlockDatabase(IOConnectionInfo ioInfo, KeyPromptForm keyPromptForm)
         {
-            WinHelloUnlockExt.opened = false;
             if (WinHelloUnlockExt.tries < 1)
             {
                 if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
@@ -189,8 +197,8 @@ namespace WinHelloUnlock
                     Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                     UWPLibrary.UnlockWithoutSecure(ioInfo);
                 }
+                ++WinHelloUnlockExt.tries;
             }
-            WinHelloUnlockExt.opened = true;
         }
         /*
         /// <summary>

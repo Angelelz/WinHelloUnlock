@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Windows.Security.Credentials;
@@ -13,6 +14,7 @@ using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace WinHelloUnlock
 {
@@ -190,6 +192,7 @@ namespace WinHelloUnlock
             {
                 string encrypted = newCredential.Password;
                 string decrypted = await Decrypt(encrypted, rResult);
+                
                 if (decrypted != "")
                 {
                     KeyList Keys = Library.ConvertKeyList(decrypted);
@@ -246,7 +249,20 @@ namespace WinHelloUnlock
             IBuffer buffMsg = CryptographicBuffer.ConvertStringToBinary(id, encoding);
 
             // The actual Signing of the string
+            //Task.Factory.StartNew(() => { Library.SetForegroundWindow(this.Handle); });
+
+            Task.Factory.StartNew(() => EnsureForeground());
+            //Action action = () => ensureForeground();
+            //Task.Run(action);
+
             KeyCredentialOperationResult opResult = await rResult.Credential.RequestSignAsync(buffMsg);
+
+            //IntPtr rightNowHandle = Library.FindWindow("Credential Dialog Xaml Host", null);
+            //Process proc = Process.GetProcessesByName("CredentialUIBroker")[0];
+            //IntPtr ptrFF = proc.MainWindowHandle;
+            //Library.SetForegroundWindow(ptrFF);
+            //Library.ShowWindow(ptrFF, 5);
+
             if (opResult.Status == KeyCredentialStatus.Success)
             {
                 IBuffer signedData = opResult.Result;
@@ -262,9 +278,30 @@ namespace WinHelloUnlock
             }
             else
             {
+                WinHelloUnlockExt.opened = false;
                 WinHelloErrors(opResult.Status, "Error decrypting the data: ");
                 return "";
             }
+        }
+
+        internal static async void EnsureForeground()
+        {
+            while(true)
+            {
+                if (IsProcessActive("CredentialUIBroker"))
+                {
+                    Process proc = Process.GetProcessesByName("CredentialUIBroker")[0];
+                    IntPtr ptrFF = proc.MainWindowHandle;
+                    Library.SetForegroundWindow(ptrFF);
+                    break;
+                }
+                Thread.Sleep(10);
+            }
+        }
+
+        private static bool IsProcessActive(string processName)
+        {
+            return Process.GetProcessesByName(processName).Any();
         }
 
         /// <summary>
@@ -371,15 +408,14 @@ namespace WinHelloUnlock
                 CompositeKey compositeKey = Library.ConvertToComposite(keyList);
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
                 compositeKey = null;
-                if (keyList.KeyName == null)
-                    ++WinHelloUnlockExt.tries;
 
                 keyList = new KeyList(null, null);
+                WinHelloUnlockExt.opened = false;
             }
             else
             {
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                ++WinHelloUnlockExt.tries;
+                WinHelloUnlockExt.opened = false;
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
             }
         }
