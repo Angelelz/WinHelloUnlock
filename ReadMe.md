@@ -1,5 +1,8 @@
-﻿Unlock KeePass 2 Databases with Windows Hello
+﻿WinHelloUnlock: Unlock KeePass 2 Databases with Windows Hello
 =============================================
+[![Latest release](https://img.shields.io/github/release/Angelelz/WinHelloUnlock.svg?label=latest%20release)](https://github.com/Angelelz/WinHelloUnlock/releases/latest)
+[![Github All Releases](https://img.shields.io/github/downloads/Angelelz/WinHelloUnlock/total.svg)](https://github.com/Angelelz/WinHelloUnlock/releases)
+[![License](https://img.shields.io/github/license/Angelelz/WinHelloUnlock.svg)](https://github.com/Angelelz/WinHelloUnlock/blob/master/LICENSE)
 
 This plugin for [KeePass 2][KeePass] password manager is intended to conveniently Unlock your database using biometrics with [Windows Hello technology][WinHello].
 
