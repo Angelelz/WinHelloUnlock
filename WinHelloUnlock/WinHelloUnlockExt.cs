@@ -94,7 +94,7 @@ namespace WinHelloUnlock
 
             await UWPLibrary.CreateHelloData(dbName);
             tries = 0;
-            
+            opened = true;
         }
 
         /// <summary>

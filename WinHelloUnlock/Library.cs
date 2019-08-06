@@ -20,9 +20,6 @@ namespace WinHelloUnlock
         [DllImport("user32.dll")]
         internal static extern bool SetForegroundWindow(IntPtr hWnd);
 
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
         [DllImport("user32.dll")]
         internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
@@ -174,61 +171,34 @@ namespace WinHelloUnlock
         /// </summary>
         /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
         /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
-        /// <param name="secureDesktopChanged">Bool that represents if secure desktop had been changed by the plugin.</param>
         internal async static void UnlockDatabase(IOConnectionInfo ioInfo, KeyPromptForm keyPromptForm)
         {
+            // Only one try is allowed
             if (WinHelloUnlockExt.tries < 1)
             {
                 if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
                 {
                     CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    // It is necceary to start a new thread when secure desktop is enabled
                     await Task.Factory.StartNew(() =>
                     {
-                        KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
                         Thread.Yield();
                         MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                        Action action = () => UWPLibrary.UnlockWithoutSecure(ioInfo);
+                        Action action = () => UWPLibrary.UnlockDatabase(ioInfo);
                         mainForm.Invoke(action);
-                    })
-                    .ContinueWith(_ => KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true);
+                    });
                 }
                 else
                 {
                     Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-                    UWPLibrary.UnlockWithoutSecure(ioInfo);
+                    UWPLibrary.UnlockDatabase(ioInfo);
                 }
                 ++WinHelloUnlockExt.tries;
             }
         }
-        /*
-        /// <summary>
-        /// Handle the database unlock if secure desktop is enabled
-        /// </summary>
-        /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
-        /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
-        /// <param name="secureDesktop">Bool that represents if secure desktop had been changed by the plugin.</param>
-        internal async static void UnlockWithSecure(KeyPromptForm keyPromptForm, IOConnectionInfo ioInfo, bool secureDesktopChanged)
-        {
-            CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
 
-            await Task.Factory.StartNew(() =>
-            {
-                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
-                secureDesktopChanged = true;
-                Thread.Yield();
-                MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
-                mainForm.Invoke(action);
-            })
-            .ContinueWith(_ =>
-            {
-                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
-                secureDesktopChanged = false;
-            });
-        }
-        */
         /// <summary>
-		/// Used to modify options form when it loada.
+		/// Used to modify options form when it load.
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>

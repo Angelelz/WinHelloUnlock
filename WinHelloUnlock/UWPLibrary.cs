@@ -248,20 +248,11 @@ namespace WinHelloUnlock
             var id = attribute.Value;
             IBuffer buffMsg = CryptographicBuffer.ConvertStringToBinary(id, encoding);
 
+            // Start a background thread to ensure Windows Security prompt is opened in foreground
+            var _ = Task.Factory.StartNew(() => EnsureForeground());
+
             // The actual Signing of the string
-            //Task.Factory.StartNew(() => { Library.SetForegroundWindow(this.Handle); });
-
-            Task.Factory.StartNew(() => EnsureForeground());
-            //Action action = () => ensureForeground();
-            //Task.Run(action);
-
             KeyCredentialOperationResult opResult = await rResult.Credential.RequestSignAsync(buffMsg);
-
-            //IntPtr rightNowHandle = Library.FindWindow("Credential Dialog Xaml Host", null);
-            //Process proc = Process.GetProcessesByName("CredentialUIBroker")[0];
-            //IntPtr ptrFF = proc.MainWindowHandle;
-            //Library.SetForegroundWindow(ptrFF);
-            //Library.ShowWindow(ptrFF, 5);
 
             if (opResult.Status == KeyCredentialStatus.Success)
             {
@@ -284,7 +275,10 @@ namespace WinHelloUnlock
             }
         }
 
-        internal static async void EnsureForeground()
+        /// <summary>
+        /// Must be executed as background process, right before calling Windows Security Prompt.
+        /// </summary>
+        internal static void EnsureForeground()
         {
             while(true)
             {
@@ -293,12 +287,17 @@ namespace WinHelloUnlock
                     Process proc = Process.GetProcessesByName("CredentialUIBroker")[0];
                     IntPtr ptrFF = proc.MainWindowHandle;
                     Library.SetForegroundWindow(ptrFF);
+                    Library.ShowWindow(ptrFF, 5);
                     break;
                 }
                 Thread.Sleep(10);
             }
         }
 
+        /// <summary>
+        /// Checks weather a process is active or not.
+        /// </summary>
+        /// <param name="strProtected">Name of the process to check if is active.</param>
         private static bool IsProcessActive(string processName)
         {
             return Process.GetProcessesByName(processName).Any();
@@ -391,12 +390,10 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Handle the database unlock if secure desktop is disabled or has been disabled by the plugin
+        /// Performs the actual unlock of the database
         /// </summary>
-        /// <param name="dbPath">IOConnectionInfo that represents the database.</param>
-        /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
         /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
-        internal static async void UnlockWithoutSecure(IOConnectionInfo ioInfo)
+        internal static async void UnlockDatabase(IOConnectionInfo ioInfo)
         {
             string dbPath = ioInfo.Path;
             
