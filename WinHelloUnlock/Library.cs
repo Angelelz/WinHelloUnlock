@@ -65,7 +65,7 @@ namespace WinHelloUnlock
         /// <returns>CompositeKey object.</returns>
         internal static CompositeKey ConvertToComposite(KeyList kList)
         {
-            if (kList.Pass == null || kList.KeyName == null) return new CompositeKey();
+            if (kList.Pass == null || kList.KeyName == null) return null;
             int kNumber = kList.Pass.Count();
             int i = 0;
             CompositeKey mKey = new CompositeKey();
@@ -166,18 +166,33 @@ namespace WinHelloUnlock
         /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
         /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
         /// <param name="secureDesktopChanged">Bool that represents if secure desktop had been changed by the plugin.</param>
-        internal static void UnlockDatabase(IOConnectionInfo ioInfo, string dbName, KeyPromptForm keyPromptForm, bool secureDesktopChanged)
+        internal async static void UnlockDatabase(IOConnectionInfo ioInfo, KeyPromptForm keyPromptForm)
         {
-            if (keyPromptForm.SecureDesktopMode && WinHelloUnlockExt.tries < 1)
+            WinHelloUnlockExt.opened = false;
+            if (WinHelloUnlockExt.tries < 1)
             {
-                UnlockWithSecure(keyPromptForm, ioInfo, secureDesktopChanged);
+                if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
+                {
+                    CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    await Task.Factory.StartNew(() =>
+                    {
+                        KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
+                        Thread.Yield();
+                        MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
+                        Action action = () => UWPLibrary.UnlockWithoutSecure(ioInfo);
+                        mainForm.Invoke(action);
+                    })
+                    .ContinueWith(_ => KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true);
+                }
+                else
+                {
+                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    UWPLibrary.UnlockWithoutSecure(ioInfo);
+                }
             }
-            else if (WinHelloUnlockExt.tries < 1 && !secureDesktopChanged)
-            {
-                UWPLibrary.UnlockWithoutSecure(dbName, keyPromptForm, ioInfo);
-            }
+            WinHelloUnlockExt.opened = true;
         }
-
+        /*
         /// <summary>
         /// Handle the database unlock if secure desktop is enabled
         /// </summary>
@@ -203,7 +218,7 @@ namespace WinHelloUnlock
                 secureDesktopChanged = false;
             });
         }
-
+        */
         /// <summary>
 		/// Used to modify options form when it loada.
 		/// </summary>

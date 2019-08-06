@@ -8,6 +8,7 @@ using Windows.Security.Cryptography;
 using Windows.Security.Cryptography.Core;
 using KeePassLib.Utility;
 using KeePass.Forms;
+using KeePassLib;
 using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Reflection;
@@ -358,42 +359,28 @@ namespace WinHelloUnlock
         /// <param name="dbPath">IOConnectionInfo that represents the database.</param>
         /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
         /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
-        internal static async void UnlockWithoutSecure(string dbPath, KeyPromptForm keyPromptForm, IOConnectionInfo ioInfo)
+        internal static async void UnlockWithoutSecure(IOConnectionInfo ioInfo)
         {
+            string dbPath = ioInfo.Path;
+            
             KeyCredentialRetrievalResult retrievalResult = await UWPLibrary.OpenCredential(dbPath);
             if (retrievalResult.Status == KeyCredentialStatus.Success)
             {
-                KeyList keyList = await UWPLibrary.RetrieveKeys(dbPath, retrievalResult);
+                KeyList keyList = await RetrieveKeys(dbPath, retrievalResult);
 
-                if (keyList.KeyName != null)
-                {
-                    CompositeKey compositeKey = Library.ConvertToComposite(keyList);
-                    Library.SetCompositeKey(keyPromptForm, compositeKey);
-                    Library.CloseFormWithResult(keyPromptForm, DialogResult.OK);
-                    compositeKey = null;
-                }
-                else
-                {
-                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                CompositeKey compositeKey = Library.ConvertToComposite(keyList);
+                WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
+                compositeKey = null;
+                if (keyList.KeyName == null)
                     ++WinHelloUnlockExt.tries;
-                    await Task.Factory.StartNew(() => {
-                        MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                        Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
-                        mainForm.Invoke(action);
-                    });
-                }
+
                 keyList = new KeyList(null, null);
             }
             else
             {
-                UWPLibrary.WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
                 ++WinHelloUnlockExt.tries;
-                await Task.Factory.StartNew(() => {
-                    MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                    Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
-                    mainForm.Invoke(action);
-                });
+                WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
             }
         }
 
