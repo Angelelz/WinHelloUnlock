@@ -10,19 +10,12 @@ using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Linq;
 using KeePass.Forms;
-using KeePassLib.Security;
-using System.Runtime.InteropServices;
+
 
 namespace WinHelloUnlock
 {
     public class Library
     {
-
-        [DllImport("user32.dll")]
-        internal static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         /// <summary>
         /// Convert the composite key to a KeyList class
@@ -37,23 +30,23 @@ namespace WinHelloUnlock
             var uAccount = dKey.UserKeys.Where(k => k is KcpUserAccount).FirstOrDefault() as KcpUserAccount;
             IEnumerable<IUserKey> kList = dKey.UserKeys;
             int kNumber = kList.Count();
-            ProtectedString[] pString = new ProtectedString[kNumber];
-            String[] tString = new String[kNumber];
+            string[] pString = new string[kNumber];
+            string[] tString = new string[kNumber];
             int i = 0;
             foreach (var uKey in kList)
             {
                 switch (uKey.GetType().ToString())
                 {
                     case "KeePassLib.Keys.KcpPassword":
-                        pString[i] = passwordKey.Password;
+                        pString[i] = passwordKey.Password.ReadString();
                         tString[i] = "KeePassLib.Keys.KcpPassword";
                         break;
                     case "KeePassLib.Keys.KcpKeyFile":
-                        pString[i] = new ProtectedString(true, kFile.Path);
+                        pString[i] = kFile.Path;
                         tString[i] = "KeePassLib.Keys.KcpKeyFile";
                         break;
                     case "KeePassLib.Keys.KcpUserAccount":
-                        pString[i] = new ProtectedString(true, "WithUA");
+                        pString[i] = "WithUA";
                         tString[i] = "KeePassLib.Keys.KcpUserAccount";
                         break;
                 }
@@ -72,7 +65,7 @@ namespace WinHelloUnlock
         /// <returns>CompositeKey object.</returns>
         internal static CompositeKey ConvertToComposite(KeyList kList)
         {
-            if (kList.Pass == null || kList.KeyName == null) return null;
+            if (kList.Pass == null || kList.KeyName == null) return new CompositeKey();
             int kNumber = kList.Pass.Count();
             int i = 0;
             CompositeKey mKey = new CompositeKey();
@@ -81,11 +74,11 @@ namespace WinHelloUnlock
                 switch (kList.KeyName[i])
                 {
                     case "KeePassLib.Keys.KcpPassword":
-                        IUserKey mKeyPass = new KcpPassword(kList.Pass[i].ReadString());
+                        IUserKey mKeyPass = new KcpPassword(kList.Pass[i]);
                         mKey.AddUserKey(mKeyPass);
                         break;
                     case "KeePassLib.Keys.KcpKeyFile":
-                        IUserKey mKeyFile = new KcpKeyFile(kList.Pass[i].ReadString());
+                        IUserKey mKeyFile = new KcpKeyFile(kList.Pass[i]);
                         mKey.AddUserKey(mKeyFile);
                         break;
                     case "KeePassLib.Keys.KcpUserAccount":
@@ -98,66 +91,46 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Converts a KeyList object to a properly formatted ProtectedString
+        /// Converts a KeyList object to a properly formatted string
         /// </summary>
         /// <param name="keys">KeyList containing the composite key information.</param>
-        /// <returns>ProtectedString containing KeyList information.</returns>
-        internal static ProtectedString ConvertToPString(KeyList keys)
+        /// <returns>String containing KeyList information.</returns>
+        internal static string ConvertToString(KeyList keys)
         {
             string div2 = WinHelloUnlockExt.ProductName + ",";
             string div = WinHelloUnlockExt.ShortProductName + ",";
-            if (keys.Pass == null || keys.KeyName == null || keys == null) return null;
-            ProtectedString pass = ProtectedString.EmptyEx;
-            foreach (ProtectedString ps in keys.Pass)
-                pass += ps + div;
-            pass = pass.Remove(pass.Length - div.Length, div.Length);
-            ProtectedString key = new ProtectedString(true, string.Join(div, keys.KeyName));
-            key = key.Insert(key.Length, div2);
-            return key + pass;
+            if (keys.Pass == null || keys.KeyName == null || keys == null) return "";
+            string pass = string.Join(div, keys.Pass);
+            string key = string.Join(div, keys.KeyName);
+            return key + div2 + pass;
         }
 
         /// <summary>
-        /// Converts a properly formatted ProtectedString to a KeyList object
+        /// Converts a properly formatted string to a KeyList object
         /// </summary>
-        /// <param name="keyAndPass">Specially formatted ProtectedString containing key information.</param>
-        /// <returns>KeyList based on provided ProtectedString.</returns>
-        internal static KeyList ConvertKeyList(ProtectedString keyAndPass)  // Maybe find a way to not use String?
+        /// <param name="keyAndPass">Specially formatted string containing key information.</param>
+        /// <returns>KeyList based on provided string.</returns>
+        internal static KeyList ConvertKeyList(string keyAndPass)
         {
             string div2 = WinHelloUnlockExt.ProductName + ",";
             string div = WinHelloUnlockExt.ShortProductName + ",";
             if (keyAndPass == null) return new KeyList(null, null);
-            var keyPass = Split(keyAndPass,div2);
+            string[] keyPass = Split(keyAndPass,div2);
             if (keyPass[1] == null) return new KeyList(null, null);
-            var keyName = Split(keyPass[0],div);
-            var pass = Split(keyPass[1],div);
-            string[] keyArray = keyName.Select(ps => ps.ReadString()).ToArray();
-            return new KeyList(keyArray, pass.ToArray());
+            string[] keyName = Split(keyPass[0],div);
+            string[] pass = Split(keyPass[1],div);
+            return new KeyList(keyName, pass);
         }
 
         /// <summary>
-        /// Splits a ProtectedString into a ProtectedString list using a string separator
+        /// Splits a string into a string array using a string separator
         /// </summary>
-        /// <param name="ps">ProtectedString to separate.</param>
+        /// <param name="s">String to separate.</param>
         /// <param name="separator"> String separator.</param>
-        /// <returns>ProtectedString List.</returns>
-        internal static List<ProtectedString> Split(ProtectedString ps, string separator)
+        /// <returns>string Array.</returns>
+        internal static string[] Split(string s, string separator)
         {
-            int index = ps.ReadString().IndexOf(separator); // Would this be safe?
-            var list = new List<ProtectedString>();
-            if (index < 0)
-            {
-                list.Add(ps);
-                return list;
-            }
-            
-            do {
-                list.Add(ps.Remove(index, ps.Length - index));
-                index += separator.Length;
-                ps = ps.Remove(0, index);
-                index = ps.ReadString().IndexOf(separator);
-            } while (index > 0);
-            list.Add(ps);
-            return list;
+            return s.Split(new string[] { separator }, StringSplitOptions.None);
         }
 
         /// <summary>
@@ -192,34 +165,47 @@ namespace WinHelloUnlock
         /// </summary>
         /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
         /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
-        internal async static void UnlockDatabase(IOConnectionInfo ioInfo, KeyPromptForm keyPromptForm)
+        /// <param name="secureDesktopChanged">Bool that represents if secure desktop had been changed by the plugin.</param>
+        internal static void UnlockDatabase(IOConnectionInfo ioInfo, string dbName, KeyPromptForm keyPromptForm, bool secureDesktopChanged)
         {
-            // Only one try is allowed
-            if (WinHelloUnlockExt.tries < 1)
+            if (keyPromptForm.SecureDesktopMode && WinHelloUnlockExt.tries < 1)
             {
-                if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
-                {
-                    CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-                    // It is necceary to start a new thread when secure desktop is enabled
-                    await Task.Factory.StartNew(() =>
-                    {
-                        Thread.Yield();
-                        MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                        Action action = () => UWPLibrary.UnlockDatabase(ioInfo);
-                        mainForm.Invoke(action);
-                    });
-                }
-                else
-                {
-                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-                    UWPLibrary.UnlockDatabase(ioInfo);
-                }
-                ++WinHelloUnlockExt.tries;
+                UnlockWithSecure(keyPromptForm, ioInfo, secureDesktopChanged);
+            }
+            else if (WinHelloUnlockExt.tries < 1 && !secureDesktopChanged)
+            {
+                UWPLibrary.UnlockWithoutSecure(dbName, keyPromptForm, ioInfo);
             }
         }
 
         /// <summary>
-		/// Used to modify options form when it load.
+        /// Handle the database unlock if secure desktop is enabled
+        /// </summary>
+        /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
+        /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
+        /// <param name="secureDesktop">Bool that represents if secure desktop had been changed by the plugin.</param>
+        internal async static void UnlockWithSecure(KeyPromptForm keyPromptForm, IOConnectionInfo ioInfo, bool secureDesktopChanged)
+        {
+            CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+
+            await Task.Factory.StartNew(() =>
+            {
+                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
+                secureDesktopChanged = true;
+                Thread.Yield();
+                MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
+                Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
+                mainForm.Invoke(action);
+            })
+            .ContinueWith(_ =>
+            {
+                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
+                secureDesktopChanged = false;
+            });
+        }
+
+        /// <summary>
+		/// Used to modify options form when it loada.
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
@@ -253,19 +239,19 @@ namespace WinHelloUnlock
     public class KeyList
     {
         private readonly string[] _kName;
-        private readonly ProtectedString[] _pName;
+        private readonly string[] _pName;
         public string[] KeyName
         {
             get { return _kName; }
         }
-        public ProtectedString[] Pass
+        public string[] Pass
         {
             get { return _pName; }
         }
-        public KeyList(string[] e, ProtectedString[] p)
+        public KeyList(string[] e, string[] db)
         {
             _kName = e;
-            _pName = p;
+            _pName = db;
         }
 
     }

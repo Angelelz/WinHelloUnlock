@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Windows.Security.Credentials;
 using Windows.Storage.Streams;
 using Windows.Security.Cryptography;
 using Windows.Security.Cryptography.Core;
 using KeePassLib.Utility;
+using KeePass.Forms;
 using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using KeePassLib.Security;
-using System.Linq;
 
 namespace WinHelloUnlock
 {
@@ -148,7 +147,7 @@ namespace WinHelloUnlock
         internal static async Task<string> SaveKeys(string dbPath, KeyList keyList, KeyCredentialRetrievalResult rResult)
         {
             PasswordVault myVault = new PasswordVault();
-            String encrypted = await Encrypt(Library.ConvertToPString(keyList), rResult);
+            string encrypted = await Encrypt(Library.ConvertToString(keyList), rResult);
             try
             {
                 PasswordCredential newCredential = new PasswordCredential(dbPath, WinHelloUnlockExt.ProductName, encrypted);
@@ -189,11 +188,11 @@ namespace WinHelloUnlock
             try
             {
                 string encrypted = newCredential.Password;
-                ProtectedString decrypted = await Decrypt(encrypted, rResult);
-                if (decrypted != null)
+                string decrypted = await Decrypt(encrypted, rResult);
+                if (decrypted != "")
                 {
                     KeyList Keys = Library.ConvertKeyList(decrypted);
-                    decrypted = null;
+                    decrypted = "";
                     return Keys;
                 }
                 else return new KeyList(null, null);
@@ -212,7 +211,7 @@ namespace WinHelloUnlock
         /// <param name="strClearText">Text to encrypt.</param>
         /// <param name="rResult">KeyCredential object used to sign a key to encrypt the text.</param>
         /// <returns>Encrypted text.</returns>
-        internal static async Task<string> Encrypt(ProtectedString ps, KeyCredentialRetrievalResult rResult)
+        internal static async Task<string> Encrypt(string strClearText, KeyCredentialRetrievalResult rResult)
         {
             var attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
             var id = attribute.Value; // Any text can be used, it will be signed with the KeyCredential to encrypt the string
@@ -227,8 +226,7 @@ namespace WinHelloUnlock
             CryptographicKey myKey = provider.CreateSymmetricKey(signedData);
 
             // Encryption of the data using the key created (mKey)
-            //IBuffer buffClear = CryptographicBuffer.ConvertStringToBinary(ps.ReadString(), encoding);
-            IBuffer buffClear = CryptographicBuffer.CreateFromByteArray(ps.ReadUtf8());
+            IBuffer buffClear = CryptographicBuffer.ConvertStringToBinary(strClearText, encoding);
             IBuffer buffProtected = CryptographicEngine.Encrypt(myKey, buffClear, null);
             return CryptographicBuffer.EncodeToBase64String(buffProtected);
         }
@@ -239,19 +237,15 @@ namespace WinHelloUnlock
         /// <param name="strProtected">Text to decrypt.</param>
         /// <param name="rResult">KeyCredential object used to sign a key to encrypt the text.</param>
         /// <returns>Decrypted text.</returns>
-        internal static async Task<ProtectedString> Decrypt(string strProtected, KeyCredentialRetrievalResult rResult)
+        internal static async Task<String> Decrypt(string strProtected, KeyCredentialRetrievalResult rResult)
         {
             // The same text must be used to decrypt the data
             var attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
             var id = attribute.Value;
             IBuffer buffMsg = CryptographicBuffer.ConvertStringToBinary(id, encoding);
 
-            // Start a background thread to ensure Windows Security prompt is opened in foreground
-            var _ = Task.Factory.StartNew(() => EnsureForeground());
-
             // The actual Signing of the string
             KeyCredentialOperationResult opResult = await rResult.Credential.RequestSignAsync(buffMsg);
-
             if (opResult.Status == KeyCredentialStatus.Success)
             {
                 IBuffer signedData = opResult.Result;
@@ -262,45 +256,14 @@ namespace WinHelloUnlock
 
                 // Decryption of the data using the key created (mKey)
                 IBuffer buffProtected = CryptographicBuffer.DecodeFromBase64String(strProtected);
-                //IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
-                //return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
-                CryptographicBuffer.CopyToByteArray(CryptographicEngine.Decrypt(myKey, buffProtected, null), out var ba);
-                return new ProtectedString(true, ba);
+                IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
+                return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
             }
             else
             {
-                WinHelloUnlockExt.opened = true;
                 WinHelloErrors(opResult.Status, "Error decrypting the data: ");
-                return null;
+                return "";
             }
-        }
-
-        /// <summary>
-        /// Must be executed as background process, right before calling Windows Security Prompt.
-        /// </summary>
-        internal static void EnsureForeground()
-        {
-            while(true)
-            {
-                if (IsProcessActive("CredentialUIBroker"))
-                {
-                    Process proc = Process.GetProcessesByName("CredentialUIBroker")[0];
-                    IntPtr ptrFF = proc.MainWindowHandle;
-                    Library.SetForegroundWindow(ptrFF);
-                    Library.ShowWindow(ptrFF, 5);
-                    break;
-                }
-                Thread.Sleep(10);
-            }
-        }
-
-        /// <summary>
-        /// Checks weather a process is active or not.
-        /// </summary>
-        /// <param name="strProtected">Name of the process to check if is active.</param>
-        private static bool IsProcessActive(string processName)
-        {
-            return Process.GetProcessesByName(processName).Any();
         }
 
         /// <summary>
@@ -390,30 +353,47 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Performs the actual unlock of the database
+        /// Handle the database unlock if secure desktop is disabled or has been disabled by the plugin
         /// </summary>
+        /// <param name="dbPath">IOConnectionInfo that represents the database.</param>
+        /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
         /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
-        internal static async void UnlockDatabase(IOConnectionInfo ioInfo)
+        internal static async void UnlockWithoutSecure(string dbPath, KeyPromptForm keyPromptForm, IOConnectionInfo ioInfo)
         {
-            string dbPath = ioInfo.Path;
-            
             KeyCredentialRetrievalResult retrievalResult = await UWPLibrary.OpenCredential(dbPath);
             if (retrievalResult.Status == KeyCredentialStatus.Success)
             {
-                KeyList keyList = await RetrieveKeys(dbPath, retrievalResult);
+                KeyList keyList = await UWPLibrary.RetrieveKeys(dbPath, retrievalResult);
 
-                CompositeKey compositeKey = Library.ConvertToComposite(keyList);
-                WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
-                compositeKey = null;
-
+                if (keyList.KeyName != null)
+                {
+                    CompositeKey compositeKey = Library.ConvertToComposite(keyList);
+                    Library.SetCompositeKey(keyPromptForm, compositeKey);
+                    Library.CloseFormWithResult(keyPromptForm, DialogResult.OK);
+                    compositeKey = null;
+                }
+                else
+                {
+                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    ++WinHelloUnlockExt.tries;
+                    await Task.Factory.StartNew(() => {
+                        MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
+                        Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
+                        mainForm.Invoke(action);
+                    });
+                }
                 keyList = new KeyList(null, null);
-                WinHelloUnlockExt.opened = true;
             }
             else
             {
-                WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                WinHelloUnlockExt.opened = true;
-                WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
+                UWPLibrary.WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
+                Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                ++WinHelloUnlockExt.tries;
+                await Task.Factory.StartNew(() => {
+                    MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
+                    Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
+                    mainForm.Invoke(action);
+                });
             }
         }
 
