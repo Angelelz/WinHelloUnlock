@@ -10,7 +10,7 @@ using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Linq;
 using KeePass.Forms;
-
+using KeePassLib.Security;
 
 namespace WinHelloUnlock
 {
@@ -30,23 +30,23 @@ namespace WinHelloUnlock
             var uAccount = dKey.UserKeys.Where(k => k is KcpUserAccount).FirstOrDefault() as KcpUserAccount;
             IEnumerable<IUserKey> kList = dKey.UserKeys;
             int kNumber = kList.Count();
-            string[] pString = new string[kNumber];
-            string[] tString = new string[kNumber];
+            ProtectedString[] pString = new ProtectedString[kNumber];
+            String[] tString = new String[kNumber];
             int i = 0;
             foreach (var uKey in kList)
             {
                 switch (uKey.GetType().ToString())
                 {
                     case "KeePassLib.Keys.KcpPassword":
-                        pString[i] = passwordKey.Password.ReadString();
+                        pString[i] = passwordKey.Password;
                         tString[i] = "KeePassLib.Keys.KcpPassword";
                         break;
                     case "KeePassLib.Keys.KcpKeyFile":
-                        pString[i] = kFile.Path;
+                        pString[i] = new ProtectedString(true, kFile.Path);
                         tString[i] = "KeePassLib.Keys.KcpKeyFile";
                         break;
                     case "KeePassLib.Keys.KcpUserAccount":
-                        pString[i] = "WithUA";
+                        pString[i] = new ProtectedString(true, "WithUA");
                         tString[i] = "KeePassLib.Keys.KcpUserAccount";
                         break;
                 }
@@ -74,11 +74,11 @@ namespace WinHelloUnlock
                 switch (kList.KeyName[i])
                 {
                     case "KeePassLib.Keys.KcpPassword":
-                        IUserKey mKeyPass = new KcpPassword(kList.Pass[i]);
+                        IUserKey mKeyPass = new KcpPassword(kList.Pass[i].ReadString());
                         mKey.AddUserKey(mKeyPass);
                         break;
                     case "KeePassLib.Keys.KcpKeyFile":
-                        IUserKey mKeyFile = new KcpKeyFile(kList.Pass[i]);
+                        IUserKey mKeyFile = new KcpKeyFile(kList.Pass[i].ReadString());
                         mKey.AddUserKey(mKeyFile);
                         break;
                     case "KeePassLib.Keys.KcpUserAccount":
@@ -91,46 +91,66 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Converts a KeyList object to a properly formatted string
+        /// Converts a KeyList object to a properly formatted ProtectedString
         /// </summary>
         /// <param name="keys">KeyList containing the composite key information.</param>
-        /// <returns>String containing KeyList information.</returns>
-        internal static string ConvertToString(KeyList keys)
+        /// <returns>ProtectedString containing KeyList information.</returns>
+        internal static ProtectedString ConvertToPString(KeyList keys)
         {
             string div2 = WinHelloUnlockExt.ProductName + ",";
             string div = WinHelloUnlockExt.ShortProductName + ",";
-            if (keys.Pass == null || keys.KeyName == null || keys == null) return "";
-            string pass = string.Join(div, keys.Pass);
-            string key = string.Join(div, keys.KeyName);
-            return key + div2 + pass;
+            if (keys.Pass == null || keys.KeyName == null || keys == null) return null;
+            ProtectedString pass = ProtectedString.EmptyEx;
+            foreach (ProtectedString ps in keys.Pass)
+                pass += ps + div;
+            pass = pass.Remove(pass.Length - div.Length, div.Length);
+            ProtectedString key = new ProtectedString(true, string.Join(div, keys.KeyName));
+            key = key.Insert(key.Length, div2);
+            return key + pass;
         }
 
         /// <summary>
-        /// Converts a properly formatted string to a KeyList object
+        /// Converts a properly formatted ProtectedString to a KeyList object
         /// </summary>
-        /// <param name="keyAndPass">Specially formatted string containing key information.</param>
-        /// <returns>KeyList based on provided string.</returns>
-        internal static KeyList ConvertKeyList(string keyAndPass)
+        /// <param name="keyAndPass">Specially formatted ProtectedString containing key information.</param>
+        /// <returns>KeyList based on provided ProtectedString.</returns>
+        internal static KeyList ConvertKeyList(ProtectedString keyAndPass)  // Maybe find a way to not use String?
         {
             string div2 = WinHelloUnlockExt.ProductName + ",";
             string div = WinHelloUnlockExt.ShortProductName + ",";
             if (keyAndPass == null) return new KeyList(null, null);
-            string[] keyPass = Split(keyAndPass,div2);
+            var keyPass = Split(keyAndPass,div2);
             if (keyPass[1] == null) return new KeyList(null, null);
-            string[] keyName = Split(keyPass[0],div);
-            string[] pass = Split(keyPass[1],div);
-            return new KeyList(keyName, pass);
+            var keyName = Split(keyPass[0],div);
+            var pass = Split(keyPass[1],div);
+            string[] keyArray = keyName.Select(ps => ps.ReadString()).ToArray();
+            return new KeyList(keyArray, pass.ToArray());
         }
 
         /// <summary>
-        /// Splits a string into a string array using a string separator
+        /// Splits a ProtectedString into a ProtectedString list using a string separator
         /// </summary>
-        /// <param name="s">String to separate.</param>
+        /// <param name="ps">ProtectedString to separate.</param>
         /// <param name="separator"> String separator.</param>
-        /// <returns>string Array.</returns>
-        internal static string[] Split(string s, string separator)
+        /// <returns>ProtectedString List.</returns>
+        internal static List<ProtectedString> Split(ProtectedString ps, string separator)
         {
-            return s.Split(new string[] { separator }, StringSplitOptions.None);
+            int index = ps.ReadString().IndexOf(separator); // Would this be safe?
+            var list = new List<ProtectedString>();
+            if (index < 0)
+            {
+                list.Add(ps);
+                return list;
+            }
+            
+            do {
+                list.Add(ps.Remove(index, ps.Length - index));
+                index += separator.Length;
+                ps = ps.Remove(0, index);
+                index = ps.ReadString().IndexOf(separator);
+            } while (index > 0);
+            list.Add(ps);
+            return list;
         }
 
         /// <summary>
@@ -239,19 +259,19 @@ namespace WinHelloUnlock
     public class KeyList
     {
         private readonly string[] _kName;
-        private readonly string[] _pName;
+        private readonly ProtectedString[] _pName;
         public string[] KeyName
         {
             get { return _kName; }
         }
-        public string[] Pass
+        public ProtectedString[] Pass
         {
             get { return _pName; }
         }
-        public KeyList(string[] e, string[] db)
+        public KeyList(string[] e, ProtectedString[] p)
         {
             _kName = e;
-            _pName = db;
+            _pName = p;
         }
 
     }

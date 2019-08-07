@@ -12,6 +12,7 @@ using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using KeePassLib.Security;
 
 namespace WinHelloUnlock
 {
@@ -147,7 +148,7 @@ namespace WinHelloUnlock
         internal static async Task<string> SaveKeys(string dbPath, KeyList keyList, KeyCredentialRetrievalResult rResult)
         {
             PasswordVault myVault = new PasswordVault();
-            string encrypted = await Encrypt(Library.ConvertToString(keyList), rResult);
+            String encrypted = await Encrypt(Library.ConvertToPString(keyList), rResult);
             try
             {
                 PasswordCredential newCredential = new PasswordCredential(dbPath, WinHelloUnlockExt.ProductName, encrypted);
@@ -188,11 +189,11 @@ namespace WinHelloUnlock
             try
             {
                 string encrypted = newCredential.Password;
-                string decrypted = await Decrypt(encrypted, rResult);
-                if (decrypted != "")
+                ProtectedString decrypted = await Decrypt(encrypted, rResult);
+                if (decrypted != null)
                 {
                     KeyList Keys = Library.ConvertKeyList(decrypted);
-                    decrypted = "";
+                    decrypted = null;
                     return Keys;
                 }
                 else return new KeyList(null, null);
@@ -211,7 +212,7 @@ namespace WinHelloUnlock
         /// <param name="strClearText">Text to encrypt.</param>
         /// <param name="rResult">KeyCredential object used to sign a key to encrypt the text.</param>
         /// <returns>Encrypted text.</returns>
-        internal static async Task<string> Encrypt(string strClearText, KeyCredentialRetrievalResult rResult)
+        internal static async Task<string> Encrypt(ProtectedString ps, KeyCredentialRetrievalResult rResult)
         {
             var attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
             var id = attribute.Value; // Any text can be used, it will be signed with the KeyCredential to encrypt the string
@@ -226,7 +227,8 @@ namespace WinHelloUnlock
             CryptographicKey myKey = provider.CreateSymmetricKey(signedData);
 
             // Encryption of the data using the key created (mKey)
-            IBuffer buffClear = CryptographicBuffer.ConvertStringToBinary(strClearText, encoding);
+            //IBuffer buffClear = CryptographicBuffer.ConvertStringToBinary(ps.ReadString(), encoding);
+            IBuffer buffClear = CryptographicBuffer.CreateFromByteArray(ps.ReadUtf8());
             IBuffer buffProtected = CryptographicEngine.Encrypt(myKey, buffClear, null);
             return CryptographicBuffer.EncodeToBase64String(buffProtected);
         }
@@ -237,7 +239,7 @@ namespace WinHelloUnlock
         /// <param name="strProtected">Text to decrypt.</param>
         /// <param name="rResult">KeyCredential object used to sign a key to encrypt the text.</param>
         /// <returns>Decrypted text.</returns>
-        internal static async Task<String> Decrypt(string strProtected, KeyCredentialRetrievalResult rResult)
+        internal static async Task<ProtectedString> Decrypt(string strProtected, KeyCredentialRetrievalResult rResult)
         {
             // The same text must be used to decrypt the data
             var attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
@@ -256,13 +258,15 @@ namespace WinHelloUnlock
 
                 // Decryption of the data using the key created (mKey)
                 IBuffer buffProtected = CryptographicBuffer.DecodeFromBase64String(strProtected);
-                IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
-                return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
+                //IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
+                //return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
+                CryptographicBuffer.CopyToByteArray(CryptographicEngine.Decrypt(myKey, buffProtected, null), out var ba);
+                return new ProtectedString(true, ba);
             }
             else
             {
                 WinHelloErrors(opResult.Status, "Error decrypting the data: ");
-                return "";
+                return null;
             }
         }
 
