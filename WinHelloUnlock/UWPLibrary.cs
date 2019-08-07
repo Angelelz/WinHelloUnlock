@@ -2,14 +2,11 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Windows.Security.Credentials;
 using Windows.Storage.Streams;
 using Windows.Security.Cryptography;
 using Windows.Security.Cryptography.Core;
 using KeePassLib.Utility;
-using KeePass.Forms;
-using KeePassLib;
 using KeePassLib.Keys;
 using KeePassLib.Serialization;
 using System.Reflection;
