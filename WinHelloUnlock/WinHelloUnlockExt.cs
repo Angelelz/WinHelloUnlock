@@ -2,6 +2,7 @@
 using KeePass.Forms;
 using KeePass.UI;
 using System;
+using System.Windows.Forms;
 using System.Reflection;
 using System.Drawing;
 using System.Diagnostics;
@@ -20,6 +21,7 @@ namespace WinHelloUnlock
         public static PwDatabase database = null;
         public static bool enablePlugin = false;
         public static int tries = 0;
+        public static bool opened = true;
 
         public static IPluginHost Host
         {
@@ -92,7 +94,7 @@ namespace WinHelloUnlock
 
             await UWPLibrary.CreateHelloData(dbName);
             tries = 0;
-            
+            opened = true;
         }
 
         /// <summary>
@@ -102,10 +104,7 @@ namespace WinHelloUnlock
 		/// <param name="e"></param>
 		private async void WindowAddedHandler(object sender, GwmWindowEventArgs e)
         {
-            database = KeePass.Program.MainForm.ActiveDatabase;
-            dbName = database.IOConnectionInfo.Path;
-            bool secureDesktopChanged = false;
-
+            
             if (e.Form is KeyPromptForm keyPromptForm)
             {
                 var fieldInfo = keyPromptForm.GetType().GetField("m_ioInfo", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -115,7 +114,13 @@ namespace WinHelloUnlock
 
                 if (!await UWPLibrary.FirstTime(dbName) && isHelloAvailable)
                 {
-                    Library.UnlockDatabase(ioInfo, dbName, keyPromptForm, secureDesktopChanged);
+                    if (opened)
+                    {
+                        opened = false;
+                        Library.UnlockDatabase(ioInfo, keyPromptForm);
+                    }
+                    else
+                        Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                 }
                 else if (!await UWPLibrary.FirstTime(dbName))
                 {
