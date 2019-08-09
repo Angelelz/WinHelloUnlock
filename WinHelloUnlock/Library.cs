@@ -11,11 +11,19 @@ using KeePassLib.Serialization;
 using System.Linq;
 using KeePass.Forms;
 using KeePassLib.Security;
+using System.Runtime.InteropServices;
+using KeePassLib.Utility;
 
 namespace WinHelloUnlock
 {
     public class Library
     {
+
+        [DllImport("user32.dll")]
+        internal static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         /// <summary>
         /// Convert the composite key to a KeyList class
@@ -50,7 +58,6 @@ namespace WinHelloUnlock
                         tString[i] = "KeePassLib.Keys.KcpUserAccount";
                         break;
                 }
-
                 ++i;
             }
             return new KeyList(tString, pString);
@@ -65,7 +72,7 @@ namespace WinHelloUnlock
         /// <returns>CompositeKey object.</returns>
         internal static CompositeKey ConvertToComposite(KeyList kList)
         {
-            if (kList.Pass == null || kList.KeyName == null) return new CompositeKey();
+            if (kList.Pass == null || kList.KeyName == null) return null;
             int kNumber = kList.Pass.Count();
             int i = 0;
             CompositeKey mKey = new CompositeKey();
@@ -74,7 +81,9 @@ namespace WinHelloUnlock
                 switch (kList.KeyName[i])
                 {
                     case "KeePassLib.Keys.KcpPassword":
-                        IUserKey mKeyPass = new KcpPassword(kList.Pass[i].ReadString());
+                        byte[] pb = kList.Pass[i].ReadUtf8();
+                        IUserKey mKeyPass = new KcpPassword(pb);
+                        MemUtil.ZeroByteArray(pb);
                         mKey.AddUserKey(mKeyPass);
                         break;
                     case "KeePassLib.Keys.KcpKeyFile":
@@ -154,18 +163,6 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Sets the composite key into the KeyPromptForm
-        /// </summary>
-        /// <param name="keyPromptForm">KeyPromptForm to set the key into.</param>
-        /// <param name="compositeKey">CompositeKey Object.</param>
-        internal static void SetCompositeKey(KeyPromptForm keyPromptForm, CompositeKey compositeKey)
-        {
-            var fieldInfo = keyPromptForm.GetType().GetField("m_pKey", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (fieldInfo != null)
-                fieldInfo.SetValue(keyPromptForm, compositeKey);
-        }
-
-        /// <summary>
         /// Closes the KeyPromptForm with a specific result (Equivalent to click the specific button)
         /// </summary>
         /// <param name="keyPromptForm">KeyPromptForm to close.</param>
@@ -185,47 +182,35 @@ namespace WinHelloUnlock
         /// </summary>
         /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
         /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
-        /// <param name="secureDesktopChanged">Bool that represents if secure desktop had been changed by the plugin.</param>
-        internal static void UnlockDatabase(IOConnectionInfo ioInfo, string dbName, KeyPromptForm keyPromptForm, bool secureDesktopChanged)
+        internal async static void UnlockDatabase(IOConnectionInfo ioInfo, KeyPromptForm keyPromptForm)
         {
-            if (keyPromptForm.SecureDesktopMode && WinHelloUnlockExt.tries < 1)
+            // Only one try is allowed
+            if (WinHelloUnlockExt.tries < 1)
             {
-                UnlockWithSecure(keyPromptForm, ioInfo, secureDesktopChanged);
-            }
-            else if (WinHelloUnlockExt.tries < 1 && !secureDesktopChanged)
-            {
-                UWPLibrary.UnlockWithoutSecure(dbName, keyPromptForm, ioInfo);
+                if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
+                {
+                    CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    // It is necceary to start a new thread when secure desktop is enabled
+                    await Task.Factory.StartNew(() =>
+                    {
+                        Thread.Yield();
+                        MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
+                        Action action = () => UWPLibrary.UnlockDatabase(ioInfo);
+                        mainForm.Invoke(action);
+                    }).ContinueWith(_ => ++WinHelloUnlockExt.tries);
+                }
+                else
+                {
+                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    UWPLibrary.UnlockDatabase(ioInfo);
+                    ++WinHelloUnlockExt.tries;
+                }
+                
             }
         }
 
         /// <summary>
-        /// Handle the database unlock if secure desktop is enabled
-        /// </summary>
-        /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
-        /// <param name="keyPromptForm">KeyPromptForm to unlock the database from.</param>
-        /// <param name="secureDesktop">Bool that represents if secure desktop had been changed by the plugin.</param>
-        internal async static void UnlockWithSecure(KeyPromptForm keyPromptForm, IOConnectionInfo ioInfo, bool secureDesktopChanged)
-        {
-            CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-
-            await Task.Factory.StartNew(() =>
-            {
-                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
-                secureDesktopChanged = true;
-                Thread.Yield();
-                MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                Action action = () => mainForm.OpenDatabase(ioInfo, null, false);
-                mainForm.Invoke(action);
-            })
-            .ContinueWith(_ =>
-            {
-                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
-                secureDesktopChanged = false;
-            });
-        }
-
-        /// <summary>
-		/// Used to modify options form when it loada.
+		/// Used to modify options form when it loads.
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
