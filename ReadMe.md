@@ -78,7 +78,7 @@ Notes
 -----
 
 No sensitive information including master passwords for databases are stored by the plugin in a plain text. A database key is encrypted and decrypted using Windows Hello API in order to unlock the database.
-KeePass Composite Key data is *Encrypted* with a *Cryptographic Key* signed with a *Windows Hello Key Credential* and saved to a *Password Vault*.
+KeePass Composite Key data is [*Encrypted*](https://docs.microsoft.com/en-us/uwp/api/windows.security.cryptography.core.cryptographicengine.encrypt) with a [*Cryptographic Key*](https://docs.microsoft.com/en-us/uwp/api/windows.security.cryptography.core.cryptographickey) signed with a *Windows Hello* [*Key Credential*](https://docs.microsoft.com/en-us/uwp/api/windows.security.credentials.keycredential) and saved as a [*Password Credential*](https://docs.microsoft.com/en-us/uwp/api/windows.security.credentials.passwordcredential) to a [*Password Vault*](https://docs.microsoft.com/en-us/uwp/api/windows.security.credentials.passwordvault).
 To decrypt this data, you need to:
 * Have access to the Password Vault
 * Have access to the Cryptographic Key
