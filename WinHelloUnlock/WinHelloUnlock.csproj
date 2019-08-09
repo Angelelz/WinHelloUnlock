@@ -92,7 +92,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="keepass.version" />
-    <None Include="ReleaseNotes.md" />
     <None Include="Resources\windows-hello16x16.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
