@@ -36,16 +36,6 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Request the creation of a Microsoft Key credential. Uses the default option to fail if credential already exists
-        /// </summary>
-        /// <param name="credentialName">Name given to the credential to be created.</param>
-        /// <returns>KeyCredentialRetrievalResult object with all the information.</returns>
-        internal static async Task<KeyCredentialRetrievalResult> CreateCredential(string credentialName)
-        {
-            return await KeyCredentialManager.RequestCreateAsync(credentialName, option);
-        }
-
-        /// <summary>
         /// Request the creation of a Microsoft Key credential.
         /// </summary>
         /// <param name="credentialName">Name given to the credential to be created.</param>
@@ -120,7 +110,6 @@ namespace WinHelloUnlock
                     break;
                 case (KeyCredentialStatus.SecurityDeviceLocked):
                     MessageService.ShowWarning(initialString + "The security device was locked.");
-
                     break;
                 case (KeyCredentialStatus.UnknownError):
                     MessageService.ShowWarning(initialString + "An unknown error occurred.");
@@ -147,10 +136,10 @@ namespace WinHelloUnlock
         /// <returns>String representing the result of the operation. Success or the error thrown.</returns>
         internal static async Task<string> SaveKeys(string dbPath, KeyList keyList, KeyCredentialRetrievalResult rResult)
         {
-            PasswordVault myVault = new PasswordVault();
-            String encrypted = await Encrypt(Library.ConvertToPString(keyList), rResult);
             try
             {
+                PasswordVault myVault = new PasswordVault();
+                String encrypted = await Encrypt(Library.ConvertToPString(keyList), rResult);
                 PasswordCredential newCredential = new PasswordCredential(dbPath, WinHelloUnlockExt.ProductName, encrypted);
                 newCredential.RetrievePassword();
                 myVault.Add(newCredential);
@@ -158,7 +147,6 @@ namespace WinHelloUnlock
             }
             catch (Exception ev)
             {
-                //MessageService.ShowInfo("Library.SaveKeys Exception: " + ev.Message);
                 return ev.Message;
             }
         }
@@ -172,7 +160,6 @@ namespace WinHelloUnlock
         /// <returns>KeyList object with all the information to compose the CompositeKey.</returns>
         internal async static Task<KeyList> RetrieveKeys(string dbPath, KeyCredentialRetrievalResult rResult)
         {
-            
             PasswordVault myVault = new PasswordVault();
             var newCredential = new PasswordCredential();
             try
@@ -193,7 +180,7 @@ namespace WinHelloUnlock
                 if (decrypted != null)
                 {
                     KeyList Keys = Library.ConvertKeyList(decrypted);
-                    decrypted = null;
+                    decrypted = ProtectedString.EmptyEx;
                     return Keys;
                 }
                 else return new KeyList(null, null);
@@ -227,9 +214,11 @@ namespace WinHelloUnlock
             CryptographicKey myKey = provider.CreateSymmetricKey(signedData);
 
             // Encryption of the data using the key created (mKey)
-            //IBuffer buffClear = CryptographicBuffer.ConvertStringToBinary(ps.ReadString(), encoding);
-            IBuffer buffClear = CryptographicBuffer.CreateFromByteArray(ps.ReadUtf8());
+            var pb = ps.ReadUtf8();
+            IBuffer buffClear = CryptographicBuffer.CreateFromByteArray(pb);
             IBuffer buffProtected = CryptographicEngine.Encrypt(myKey, buffClear, null);
+            buffClear = null;
+            MemUtil.ZeroByteArray(pb);
             return CryptographicBuffer.EncodeToBase64String(buffProtected);
         }
 
@@ -262,10 +251,10 @@ namespace WinHelloUnlock
 
                 // Decryption of the data using the key created (mKey)
                 IBuffer buffProtected = CryptographicBuffer.DecodeFromBase64String(strProtected);
-                //IBuffer buffUnprotected = CryptographicEngine.Decrypt(myKey, buffProtected, null);
-                //return CryptographicBuffer.ConvertBinaryToString(encoding, buffUnprotected);
                 CryptographicBuffer.CopyToByteArray(CryptographicEngine.Decrypt(myKey, buffProtected, null), out var ba);
-                return new ProtectedString(true, ba);
+                ProtectedString ps = new ProtectedString(true, ba);
+                MemUtil.ZeroByteArray(ba);
+                return ps;
             }
             else
             {

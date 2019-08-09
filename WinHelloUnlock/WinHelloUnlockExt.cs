@@ -129,6 +129,7 @@ namespace WinHelloUnlock
             }
             if (e.Form is OptionsForm optionsForm)
             {
+                if (WinHelloUnlockExt.database == null) return;
                 optionsForm.Shown += delegate (object sender2, EventArgs e2)
                 {
                     
@@ -139,7 +140,6 @@ namespace WinHelloUnlock
                     catch (Exception ex)
                     {
                         MessageService.ShowWarning("Error: " + ex.Message);
-                        //Debug.Fail(ex.ToString());
                     }
                 };
             }

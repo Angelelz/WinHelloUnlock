@@ -12,6 +12,7 @@ using System.Linq;
 using KeePass.Forms;
 using KeePassLib.Security;
 using System.Runtime.InteropServices;
+using KeePassLib.Utility;
 
 namespace WinHelloUnlock
 {
@@ -57,7 +58,6 @@ namespace WinHelloUnlock
                         tString[i] = "KeePassLib.Keys.KcpUserAccount";
                         break;
                 }
-
                 ++i;
             }
             return new KeyList(tString, pString);
@@ -81,7 +81,9 @@ namespace WinHelloUnlock
                 switch (kList.KeyName[i])
                 {
                     case "KeePassLib.Keys.KcpPassword":
-                        IUserKey mKeyPass = new KcpPassword(kList.Pass[i].ReadString());
+                        byte[] pb = kList.Pass[i].ReadUtf8();
+                        IUserKey mKeyPass = new KcpPassword(pb);
+                        MemUtil.ZeroByteArray(pb);
                         mKey.AddUserKey(mKeyPass);
                         break;
                     case "KeePassLib.Keys.KcpKeyFile":
@@ -161,18 +163,6 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Sets the composite key into the KeyPromptForm
-        /// </summary>
-        /// <param name="keyPromptForm">KeyPromptForm to set the key into.</param>
-        /// <param name="compositeKey">CompositeKey Object.</param>
-        internal static void SetCompositeKey(KeyPromptForm keyPromptForm, CompositeKey compositeKey)
-        {
-            var fieldInfo = keyPromptForm.GetType().GetField("m_pKey", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (fieldInfo != null)
-                fieldInfo.SetValue(keyPromptForm, compositeKey);
-        }
-
-        /// <summary>
         /// Closes the KeyPromptForm with a specific result (Equivalent to click the specific button)
         /// </summary>
         /// <param name="keyPromptForm">KeyPromptForm to close.</param>
@@ -207,19 +197,20 @@ namespace WinHelloUnlock
                         MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
                         Action action = () => UWPLibrary.UnlockDatabase(ioInfo);
                         mainForm.Invoke(action);
-                    });
+                    }).ContinueWith(_ => ++WinHelloUnlockExt.tries);
                 }
                 else
                 {
                     Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                     UWPLibrary.UnlockDatabase(ioInfo);
+                    ++WinHelloUnlockExt.tries;
                 }
-                ++WinHelloUnlockExt.tries;
+                
             }
         }
 
         /// <summary>
-		/// Used to modify options form when it load.
+		/// Used to modify options form when it loads.
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
