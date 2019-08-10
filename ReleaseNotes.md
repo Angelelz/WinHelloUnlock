@@ -1,7 +1,3 @@
-﻿# [WinHello v0.99](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v0.99)
+﻿# [WinHelloUnlock v0.99.2](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v0.99.2)
 
-- Try to get Windows Security prompt to appear on the foreground [#1](https://github.com/Angelelz/WinHelloUnlock/issues/1).
-- Only show Windows Security prompt whenever trying to unlock database (not traditional authentication prompt) [#1](https://github.com/Angelelz/WinHelloUnlock/issues/1).
-- Improve security by using ProtectedString instead of String whenever possible.
-- Fix Error when opening the options window without any database opened.
-- Other code optimizations.
+- Force Windows Security Prompt to foreground even if user clicks away or tries to change focus [#1](https://github.com/Angelelz/WinHelloUnlock/issues/1).
