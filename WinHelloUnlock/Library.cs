@@ -25,6 +25,9 @@ namespace WinHelloUnlock
         [DllImport("user32.dll")]
         internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+        [DllImport("user32.dll")]
+        internal static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
         /// <summary>
         /// Convert the composite key to a KeyList class
         /// </summary>
