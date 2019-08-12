@@ -269,27 +269,23 @@ namespace WinHelloUnlock
         /// </summary>
         internal static void EnsureForeground()
         {
+            IntPtr ptrFF = Library.FindWindow("Credential Dialog Xaml Host", null);
             while(true)
             {
-                if (IsProcessActive("CredentialUIBroker"))
+                if (ptrFF != IntPtr.Zero)
                 {
-                    Process proc = Process.GetProcessesByName("CredentialUIBroker")[0];
-                    IntPtr ptrFF = proc.MainWindowHandle;
-                    Library.SetForegroundWindow(ptrFF);
-                    Library.ShowWindow(ptrFF, 5);
+                    do
+                    {
+                        Library.SetForegroundWindow(ptrFF);
+                        Library.ShowWindow(ptrFF, 5);
+                        Thread.Sleep(100);
+                    } while (Library.FindWindow("Credential Dialog Xaml Host", null) != IntPtr.Zero);
+                    
                     break;
                 }
-                Thread.Sleep(10);
+                else ptrFF = Library.FindWindow("Credential Dialog Xaml Host", null);
+                Thread.Sleep(20);
             }
-        }
-
-        /// <summary>
-        /// Checks weather a process is active or not.
-        /// </summary>
-        /// <param name="strProtected">Name of the process to check if is active.</param>
-        private static bool IsProcessActive(string processName)
-        {
-            return Process.GetProcessesByName(processName).Any();
         }
 
         /// <summary>
