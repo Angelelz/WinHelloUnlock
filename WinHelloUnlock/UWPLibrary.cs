@@ -388,7 +388,15 @@ namespace WinHelloUnlock
                 KeyList keyList = await RetrieveKeys(dbPath, retrievalResult);
 
                 CompositeKey compositeKey = Library.ConvertToComposite(keyList);
+                WinHelloUnlockExt.opened = true;
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
+                if (WinHelloUnlockExt.Host.Database.IOConnectionInfo.Path != dbPath)
+                {
+                    MessageService.ShowWarning(WinHelloUnlockExt.ProductName + " could not unlock this database." +
+                        " MasterKey must have changed. Deleting " + WinHelloUnlockExt.ProductName + " data.");
+                    DeleteHelloData(dbPath);
+                    WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
+                }
                 compositeKey = null;
 
                 keyList = new KeyList(null, null);
