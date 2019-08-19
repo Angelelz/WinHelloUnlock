@@ -204,12 +204,13 @@ namespace WinHelloUnlock
                 }
                 else
                 {
-                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                     UWPLibrary.UnlockDatabase(ioInfo);
                     ++WinHelloUnlockExt.tries;
                 }
                 
             }
+            WinHelloUnlockExt.opened = true;
         }
 
         /// <summary>

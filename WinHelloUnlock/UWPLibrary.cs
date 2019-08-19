@@ -392,12 +392,10 @@ namespace WinHelloUnlock
                 compositeKey = null;
 
                 keyList = new KeyList(null, null);
-                WinHelloUnlockExt.opened = true;
             }
             else
             {
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                WinHelloUnlockExt.opened = true;
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
             }
         }
