@@ -1,5 +1,8 @@
 ﻿# [WinHelloUnlock v1.1](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v1.1)
 
-- Fix [#12](https://github.com/Angelelz/WinHelloUnlock/issues/12). Manual change of Master Key poorly handled by the plugin.
-- Fix [#13](https://github.com/Angelelz/WinHelloUnlock/issues/13). Standard Key Prompt not showing after cancelling once.
-- Fix [#14](https://github.com/Angelelz/WinHelloUnlock/issues/14). Added support for KeeAnywhere Plugin.
+- Fix [#19](https://github.com/Angelelz/WinHelloUnlock/issues/19). Plugin can't be re-enabled after disabling it and restarted KeePass.
+- Removed WinHelloUnlock option appearing when all databases had been closed.
+- Fix wrong database in options when several databases are opened.
+- Added database filename in options to verify which database is being changed.
+- Removed asking if you want to set WinHelloUnlock when clicking "Create WinHelloUnlock data for this Database" in Options.
+- Other options customizations and code optimizations.

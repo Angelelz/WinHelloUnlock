@@ -54,7 +54,7 @@
             // infoLabel
             // 
             this.infoLabel.AutoSize = true;
-            this.infoLabel.Location = new System.Drawing.Point(16, 53);
+            this.infoLabel.Location = new System.Drawing.Point(16, 91);
             this.infoLabel.Margin = new System.Windows.Forms.Padding(7, 0, 7, 0);
             this.infoLabel.Name = "infoLabel";
             this.infoLabel.Size = new System.Drawing.Size(573, 29);
@@ -65,7 +65,7 @@
             // 
             this.deleteButton.AccessibleName = "";
             this.deleteButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.deleteButton.Location = new System.Drawing.Point(670, 246);
+            this.deleteButton.Location = new System.Drawing.Point(670, 275);
             this.deleteButton.Margin = new System.Windows.Forms.Padding(7);
             this.deleteButton.Name = "deleteButton";
             this.deleteButton.Size = new System.Drawing.Size(568, 51);
@@ -77,7 +77,7 @@
             // createButton
             // 
             this.createButton.AccessibleName = "";
-            this.createButton.Location = new System.Drawing.Point(21, 246);
+            this.createButton.Location = new System.Drawing.Point(21, 275);
             this.createButton.Margin = new System.Windows.Forms.Padding(7);
             this.createButton.Name = "createButton";
             this.createButton.Size = new System.Drawing.Size(568, 51);
@@ -97,7 +97,7 @@
             this.settingsGroupBox.Margin = new System.Windows.Forms.Padding(7);
             this.settingsGroupBox.Name = "settingsGroupBox";
             this.settingsGroupBox.Padding = new System.Windows.Forms.Padding(7);
-            this.settingsGroupBox.Size = new System.Drawing.Size(1260, 339);
+            this.settingsGroupBox.Size = new System.Drawing.Size(1260, 362);
             this.settingsGroupBox.TabIndex = 10;
             this.settingsGroupBox.TabStop = false;
             this.settingsGroupBox.Text = "WinHelloUnlock Settings";
@@ -106,7 +106,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.ForeColor = System.Drawing.Color.Red;
-            this.label1.Location = new System.Drawing.Point(52, 149);
+            this.label1.Location = new System.Drawing.Point(52, 187);
             this.label1.Margin = new System.Windows.Forms.Padding(7, 0, 7, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(0, 29);
@@ -115,7 +115,7 @@
             // checkBox
             // 
             this.checkBox.AutoSize = true;
-            this.checkBox.Location = new System.Drawing.Point(21, 109);
+            this.checkBox.Location = new System.Drawing.Point(21, 147);
             this.checkBox.Margin = new System.Windows.Forms.Padding(7);
             this.checkBox.Name = "checkBox";
             this.checkBox.Size = new System.Drawing.Size(484, 33);
