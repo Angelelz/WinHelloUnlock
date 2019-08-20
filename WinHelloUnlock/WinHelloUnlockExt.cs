@@ -88,7 +88,9 @@ namespace WinHelloUnlock
             }
 
             var ioInfo = e.Database.IOConnectionInfo;
-            dbName = ioInfo.Path;
+            dbName = Library.CharChange(ioInfo.Path);
+            
+            
             bool firstTime = await UWPLibrary.FirstTime(dbName);
             database = e.Database;
 
@@ -109,7 +111,7 @@ namespace WinHelloUnlock
             {
                 var fieldInfo = keyPromptForm.GetType().GetField("m_ioInfo", BindingFlags.Instance | BindingFlags.NonPublic);
                 var ioInfo = fieldInfo.GetValue(keyPromptForm) as IOConnectionInfo;
-                string dbName = ioInfo.Path;
+                string dbName = Library.CharChange(ioInfo.Path);
                 bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
 
                 if (!await UWPLibrary.FirstTime(dbName) && isHelloAvailable)

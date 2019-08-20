@@ -295,12 +295,10 @@ namespace WinHelloUnlock
         /// <returns>True if a KeyCredential and a PasswordCredential exist for the Database path.</returns>
         internal static async Task<bool> FirstTime(string dbPath)
         {
-
-            KeyCredentialRetrievalResult result = await OpenCredential(dbPath);
-            PasswordVault myVault = new PasswordVault();
-
             try
             {
+                KeyCredentialRetrievalResult result = await OpenCredential(dbPath);
+                PasswordVault myVault = new PasswordVault();
                 PasswordCredential cred = myVault.Retrieve(dbPath, WinHelloUnlockExt.ProductName);
                 if (result.Status == KeyCredentialStatus.Success) return false;
                 else return true;
@@ -380,7 +378,7 @@ namespace WinHelloUnlock
         /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
         internal static async void UnlockDatabase(IOConnectionInfo ioInfo)
         {
-            string dbPath = ioInfo.Path;
+            string dbPath = Library.CharChange(ioInfo.Path);
             
             KeyCredentialRetrievalResult retrievalResult = await UWPLibrary.OpenCredential(dbPath);
             if (retrievalResult.Status == KeyCredentialStatus.Success)
@@ -390,11 +388,13 @@ namespace WinHelloUnlock
                 CompositeKey compositeKey = Library.ConvertToComposite(keyList);
                 WinHelloUnlockExt.opened = true;
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
-                if (WinHelloUnlockExt.Host.Database.IOConnectionInfo.Path != dbPath)
+                string oPath = Library.CharChange(WinHelloUnlockExt.Host.Database.IOConnectionInfo.Path);
+                if (oPath != dbPath)
                 {
-                    MessageService.ShowWarning(WinHelloUnlockExt.ProductName + " could not unlock this database." +
-                        " MasterKey must have changed. Deleting " + WinHelloUnlockExt.ProductName + " data.");
-                    DeleteHelloData(dbPath);
+                    string str = WinHelloUnlockExt.ProductName + " could not unlock this database." +
+                        " MasterKey may have changed. Delete " + WinHelloUnlockExt.ProductName + " data?";
+                    if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
+                        DeleteHelloData(dbPath);
                     WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
                 }
                 compositeKey = null;
