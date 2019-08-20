@@ -243,6 +243,11 @@ namespace WinHelloUnlock
             }
         }
 
+        internal static string CharChange(string name)
+        {
+            return name.Replace('/', '\\');
+        }
+
     }
 
     public class KeyList
