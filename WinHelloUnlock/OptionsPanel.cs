@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace WinHelloUnlock
 {
@@ -9,6 +10,8 @@ namespace WinHelloUnlock
     {
         public static string db = WinHelloUnlockExt.dbName;
         private static string onOpenEnabled = "";
+        bool enabled = true;
+        private static bool first = false;
 
         /// <summary>
         /// Options Panel class with all WinHelloUnlock options
@@ -16,51 +19,16 @@ namespace WinHelloUnlock
         public OptionsPanel()
         {
             InitializeComponent();
-            onOpenEnabled = WinHelloUnlockExt.database.CustomData.Get(WinHelloUnlockExt.ProductName);
-            Task<bool> firstTime = Task.Run(async () =>
-            {
-                bool f = await UWPLibrary.FirstTime(db);
-                return f;
-            });
-
-            bool enabled = true;
-            if (WinHelloUnlockExt.database.CustomData.Get(WinHelloUnlockExt.ProductName) == "false")
-                enabled = false;
-            
-            if (firstTime.Result)
-            {
-                infoLabel.Text = "WinHelloUnlock is NOT configured for this Database";
-                deleteButton.Enabled = false;
-                if (enabled) checkBox.Checked = true;
-                else
-                {
-                    checkBox.Checked = false;
-                    createButton.Enabled = false;
-                }
-            }
-            else
-            {
-                infoLabel.Text = "WinHelloUnlock is configured for this Database";
-                createButton.Enabled = false;
-                if (enabled) checkBox.Checked = true;
-                else
-                {
-                    checkBox.Checked = false;
-                    deleteButton.Enabled = false;
-                }
-            }
+            db = WinHelloUnlockExt.dbName;
+            RefreshOptions();
+            checkBox.Checked = enabled;
         }
 
         /// <summary>Register for the FormClosing event.</summary>
 		protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            Task<bool> firstTime = Task.Run(async () =>
-            {
-                bool f = await UWPLibrary.FirstTime(db);
-                return f;
-            });
-            bool first = firstTime.Result;
+
             if (ParentForm != null)
             {
                 // Save the settings on FormClosing.
@@ -104,41 +72,52 @@ namespace WinHelloUnlock
         /// <summary>Creates WinHelloUnock data when the Create Button is clicked.</summary>
         private async void CreateButton_Click(object sender, EventArgs e)
         {
-            bool check = checkBox.Checked;
-            bool first = await UWPLibrary.FirstTime(db);
-            bool created = await UWPLibrary.CreateHelloData(WinHelloUnlockExt.dbName);
-            createButton.Enabled = !created && check;
-            deleteButton.Enabled = !createButton.Enabled;
-            if (created) infoLabel.Text = "WinHelloUnlock is configured for this Database";
+            await UWPLibrary.CreateHelloData(WinHelloUnlockExt.dbName);
+            RefreshOptions();
         }
 
         /// <summary>Deletes WinHelloUnock data when the Delete Button is clicked.</summary>
-        private async void DeleteteButton_Click(object sender, EventArgs e)
+        private void DeleteteButton_Click(object sender, EventArgs e)
         {
-            bool check = checkBox.Checked;
-            bool first = await UWPLibrary.FirstTime(db);
             UWPLibrary.DeleteHelloData(WinHelloUnlockExt.dbName);
-            bool first2 = await UWPLibrary.FirstTime(db);
-            deleteButton.Enabled = !first2;
-            createButton.Enabled = first2 && check;
-            if (first2) infoLabel.Text = "WinHelloUnlock is NOT configured for this Database";
+            RefreshOptions();
         }
 
         /// <summary>Updates the form when the CheckBox is clicked.</summary>
         private void CheckBox_Change(object sender, EventArgs e)
         {
-            Task<bool> firstTime = Task.Run(async () =>
-            {
-                bool f = await UWPLibrary.FirstTime(db);
-                return f;
-            });
             bool check = checkBox.Checked;
-            bool first = firstTime.Result;
+            first = Task.Run(() => UWPLibrary.FirstTime(db)).Result;
 
             createButton.Enabled = first && check;
             deleteButton.Enabled = !first;
             label1.Text = "";
             if (!check && !first) label1.Text = "WinHelloUnlock Data will be deleted";
+        }
+
+        private void RefreshOptions()
+        {
+            string text = "";
+            string path = WinHelloUnlockExt.database.IOConnectionInfo.Path;
+            string fileName = Path.GetFileName(path);
+            if (path.Length > 50)
+                text = path.Substring(0, Math.Max(0,45 - fileName.Length)) + " ... " + fileName;
+            else text = path;
+            settingsGroupBox.Text = "WinHelloUnlock Settings for " + text;
+
+            first = Task.Run(() => UWPLibrary.FirstTime(db)).Result;
+            onOpenEnabled = WinHelloUnlockExt.database.CustomData.Get(WinHelloUnlockExt.ProductName);
+
+            enabled = true;
+            if (onOpenEnabled == "false")
+                enabled = false;
+
+            if (enabled && !first) infoLabel.Text = "WinHelloUnlock is configured for this Database";
+            else infoLabel.Text = "WinHelloUnlock is NOT configured for this Database";
+
+            //checkBox.Checked = enabled;
+            createButton.Enabled = first && (enabled || checkBox.Checked);
+            deleteButton.Enabled = !first;
         }
 
     }

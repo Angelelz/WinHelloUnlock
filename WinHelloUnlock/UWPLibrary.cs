@@ -324,50 +324,33 @@ namespace WinHelloUnlock
         /// <returns>True if all the data was saved successfully.</returns>
         internal static async Task<bool> CreateHelloData(string dbPath)
         {
-            if (await FirstTime(dbPath))
+            
+            bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
+            if (isHelloAvailable)
             {
-                bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
-                    WinHelloUnlockExt.ProductName + " for " + dbPath + " now?", WinHelloUnlockExt.ShortProductName, true);
 
-                if (yesOrNo)
+                KeyCredentialCreationOption optionNew = KeyCredentialCreationOption.ReplaceExisting;
+                KeyCredentialRetrievalResult retrievalResult = await UWPLibrary.CreateCredential(dbPath, optionNew);
+
+                if (retrievalResult.Status == KeyCredentialStatus.Success)
                 {
-                    bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
-                    if (isHelloAvailable)
+                    KeyList keyList = Library.GetKeys(WinHelloUnlockExt.database);
+                    string resultSave = await UWPLibrary.SaveKeys(dbPath, keyList, retrievalResult);
+                    if (resultSave == "Success")
                     {
-
-                        KeyCredentialCreationOption optionNew = KeyCredentialCreationOption.ReplaceExisting;
-                        KeyCredentialRetrievalResult retrievalResult = await UWPLibrary.CreateCredential(dbPath, optionNew);
-
-                        if (retrievalResult.Status == KeyCredentialStatus.Success)
-                        {
-                            KeyList keyList = Library.GetKeys(WinHelloUnlockExt.database);
-                            string resultSave = await UWPLibrary.SaveKeys(dbPath, keyList, retrievalResult);
-                            if (resultSave == "Success")
-                            {
-                                MessageService.ShowInfo("Database Keys saved successfuly");
-                                return true;
-                            }
-                            else MessageService.ShowWarning("Error saving the composite key: " + resultSave);
-                        }
-                        else
-                        {
-                            WinHelloErrors(retrievalResult.Status, "Error creating the credential: ");
-                        }
+                        MessageService.ShowInfo("Database Keys saved successfuly");
+                        return true;
                     }
-                    else
-                    {
-                        MessageService.ShowWarning("Windows Hello is NOT Available");
-                    }
-
+                    else MessageService.ShowWarning("Error saving the composite key: " + resultSave);
                 }
                 else
                 {
-                    //MessageService.ShowWarning("You will be asked again next time you open this Database");
+                    WinHelloErrors(retrievalResult.Status, "Error creating the credential: ");
                 }
             }
             else
             {
-
+                MessageService.ShowWarning("Windows Hello is NOT Available");
             }
             return false;
         }

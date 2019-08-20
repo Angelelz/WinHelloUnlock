@@ -51,6 +51,7 @@ namespace WinHelloUnlock
 
             GlobalWindowManager.WindowAdded += WindowAddedHandler;
             host.MainWindow.FileOpened += FileOpenedHandler;
+            host.MainWindow.DocumentManager.ActiveDocumentSelected += ActiveDocChanged;
 
             return true;
         }
@@ -61,6 +62,7 @@ namespace WinHelloUnlock
 
             GlobalWindowManager.WindowAdded -= WindowAddedHandler;
             host.MainWindow.FileOpened -= FileOpenedHandler;
+            host.MainWindow.DocumentManager.ActiveDocumentSelected -= ActiveDocChanged;
 
             host = null;
         }
@@ -72,6 +74,7 @@ namespace WinHelloUnlock
 		/// <param name="e"></param>
         private async void FileOpenedHandler(object sender, FileOpenedEventArgs e)
         {
+            var ioInfo = e.Database.IOConnectionInfo;
             if (e.Database.CustomData.Get(ProductName) == null)
             {
                 e.Database.CustomData.Set(ProductName, "true");
@@ -84,17 +87,24 @@ namespace WinHelloUnlock
             if (e.Database.CustomData.Get(ProductName) == "false")
             {
                 enablePlugin = false;
+                dbName = Library.CharChange(ioInfo.Path);
+                database = e.Database;
                 return;
             }
-
-            var ioInfo = e.Database.IOConnectionInfo;
+            
             dbName = Library.CharChange(ioInfo.Path);
-            
-            
-            bool firstTime = await UWPLibrary.FirstTime(dbName);
             database = e.Database;
 
-            await UWPLibrary.CreateHelloData(dbName);
+            bool firstTime = await UWPLibrary.FirstTime(dbName);
+
+            if (firstTime)
+            {
+                bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
+                    WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
+
+                if (yesOrNo)
+                    await UWPLibrary.CreateHelloData(dbName);
+            }
             tries = 0;
             opened = true;
         }
@@ -131,7 +141,7 @@ namespace WinHelloUnlock
             }
             if (e.Form is OptionsForm optionsForm)
             {
-                if (WinHelloUnlockExt.database == null) return;
+                if (!host.MainWindow.ActiveDatabase.IsOpen) return;
                 optionsForm.Shown += delegate (object sender2, EventArgs e2)
                 {
                     
@@ -141,13 +151,18 @@ namespace WinHelloUnlock
                     }
                     catch (Exception ex)
                     {
-                        MessageService.ShowWarning("Error: " + ex.Message);
+                        MessageService.ShowWarning("WinHelloUnlock Error: " + ex.Message);
                     }
                 };
             }
         }
 
-        
+        private void ActiveDocChanged(object sender, EventArgs e)
+        {
+            database = Host.MainWindow.ActiveDatabase;
+            var ioInfo = database.IOConnectionInfo;
+            dbName = Library.CharChange(ioInfo.Path);
+        }
 
     }
 }
