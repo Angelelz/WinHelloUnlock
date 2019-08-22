@@ -359,11 +359,11 @@ namespace WinHelloUnlock
         /// Performs the actual unlock of the database
         /// </summary>
         /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
-        internal static async void UnlockDatabase(IOConnectionInfo ioInfo)
+        internal static async Task UnlockDatabase(IOConnectionInfo ioInfo)
         {
             string dbPath = Library.CharChange(ioInfo.Path);
             
-            KeyCredentialRetrievalResult retrievalResult = await UWPLibrary.OpenCredential(dbPath);
+            KeyCredentialRetrievalResult retrievalResult = await OpenCredential(dbPath);
             if (retrievalResult.Status == KeyCredentialStatus.Success)
             {
                 KeyList keyList = await RetrieveKeys(dbPath, retrievalResult);

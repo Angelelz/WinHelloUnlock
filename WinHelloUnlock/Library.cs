@@ -190,22 +190,21 @@ namespace WinHelloUnlock
             // Only one try is allowed
             if (WinHelloUnlockExt.tries < 1)
             {
+                CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                 if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
                 {
-                    CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                     // It is necceary to start a new thread when secure desktop is enabled
                     await Task.Factory.StartNew(() =>
                     {
                         Thread.Yield();
                         MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                        Action action = () => UWPLibrary.UnlockDatabase(ioInfo);
+                        Action action = async () => await UWPLibrary.UnlockDatabase(ioInfo);
                         mainForm.Invoke(action);
                     }).ContinueWith(_ => ++WinHelloUnlockExt.tries);
                 }
                 else
                 {
-                    CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-                    UWPLibrary.UnlockDatabase(ioInfo);
+                    await UWPLibrary.UnlockDatabase(ioInfo);
                     ++WinHelloUnlockExt.tries;
                 }
                 
