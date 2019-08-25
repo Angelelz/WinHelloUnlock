@@ -372,12 +372,12 @@ namespace WinHelloUnlock
                 ++WinHelloUnlockExt.tries;
                 if (compositeKey != null)
                 {
-                    WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
-                    string oPath = Library.CharChange(WinHelloUnlockExt.Host.Database.IOConnectionInfo.Path);
-                    if (oPath != dbPath)
+                    if (Library.CheckMasterKey(ioInfo, compositeKey))
+                        WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
+                    else
                     {
                         string str = WinHelloUnlockExt.ProductName + " could not unlock this database." +
-                            " MasterKey may have changed. Delete " + WinHelloUnlockExt.ProductName + " data?";
+                            " MasterKey must have changed. Delete " + WinHelloUnlockExt.ProductName + " data?";
                         if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
                             DeleteHelloData(dbPath);
                         WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);

@@ -247,6 +247,19 @@ namespace WinHelloUnlock
             return name.Replace('/', '\\');
         }
 
+        internal static bool CheckMasterKey(IOConnectionInfo ioinfo, CompositeKey key)
+        {
+            PwDatabase db = new PwDatabase();
+            try
+            {
+                db.Open(ioinfo, key, null);
+                bool isopen = db.IsOpen;
+                db.Close();
+                return isopen;
+            }
+            catch(Exception) { return false; }
+        }
+
     }
 
     public class KeyList
