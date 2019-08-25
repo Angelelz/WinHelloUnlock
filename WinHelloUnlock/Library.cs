@@ -260,6 +260,29 @@ namespace WinHelloUnlock
             catch(Exception) { return false; }
         }
 
+        internal static async Task HandleMasterKeyChange(IOConnectionInfo ioInfo, string dbPath, bool opening)
+        {
+            if (opening)
+            {
+                string str = WinHelloUnlockExt.ProductName + " could not unlock this database." +
+                                " MasterKey must have changed. Delete " + WinHelloUnlockExt.ProductName + " data?";
+                if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
+                    UWPLibrary.DeleteHelloData(dbPath);
+                WinHelloUnlockExt.opened = true;
+                WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
+            }
+            else
+            {
+                string str = "A change in MasterKey has been detected. Do you want to update " +
+                            WinHelloUnlockExt.ProductName + " data?";
+                if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
+                {
+                    UWPLibrary.DeleteHelloData(dbPath);
+                    await UWPLibrary.CreateHelloData(dbPath);
+                }
+            }
+        }
+
     }
 
     public class KeyList

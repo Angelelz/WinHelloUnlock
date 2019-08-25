@@ -375,13 +375,8 @@ namespace WinHelloUnlock
                     if (Library.CheckMasterKey(ioInfo, compositeKey))
                         WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
                     else
-                    {
-                        string str = WinHelloUnlockExt.ProductName + " could not unlock this database." +
-                            " MasterKey must have changed. Delete " + WinHelloUnlockExt.ProductName + " data?";
-                        if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
-                            DeleteHelloData(dbPath);
-                        WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
-                    }
+                        await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
+
                     compositeKey = null;
                     
                     keyList = new KeyList(null, null);
