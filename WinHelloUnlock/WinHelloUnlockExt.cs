@@ -51,6 +51,7 @@ namespace WinHelloUnlock
 
             GlobalWindowManager.WindowAdded += WindowAddedHandler;
             host.MainWindow.FileOpened += FileOpenedHandler;
+            host.MainWindow.FileSaved += OnSavedDB;
             host.MainWindow.DocumentManager.ActiveDocumentSelected += ActiveDocChanged;
 
             return true;
@@ -62,6 +63,7 @@ namespace WinHelloUnlock
 
             GlobalWindowManager.WindowAdded -= WindowAddedHandler;
             host.MainWindow.FileOpened -= FileOpenedHandler;
+            host.MainWindow.FileSaved -= OnSavedDB;
             host.MainWindow.DocumentManager.ActiveDocumentSelected -= ActiveDocChanged;
 
             host = null;
@@ -162,6 +164,15 @@ namespace WinHelloUnlock
             database = Host.MainWindow.ActiveDatabase;
             var ioInfo = database.IOConnectionInfo;
             dbName = Library.CharChange(ioInfo.Path);
+        }
+
+        private async void OnSavedDB(Object sender, FileSavedEventArgs args)
+        {
+            var db = args.Database;
+            var ioInfo = db.IOConnectionInfo;
+            string dbPath = Library.CharChange(ioInfo.Path);
+            if (!await UWPLibrary.FirstTime(dbPath) && await UWPLibrary.IsHelloAvailable())
+                await Library.HandleMasterKeyChange(ioInfo, dbPath, false);
         }
 
     }
