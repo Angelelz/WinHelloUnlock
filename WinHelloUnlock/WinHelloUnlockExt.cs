@@ -22,6 +22,7 @@ namespace WinHelloUnlock
         public static bool enablePlugin = false;
         public static int tries = 0;
         public static bool opened = true;
+        public static UpdateCheckForm updateCheckForm = null;
 
         public static IPluginHost Host
         {
@@ -157,6 +158,8 @@ namespace WinHelloUnlock
                     }
                 };
             }
+            if (e.Form is UpdateCheckForm ucf && !opened)
+                WinHelloUnlockExt.updateCheckForm = ucf;
         }
 
         private void ActiveDocChanged(object sender, EventArgs e)

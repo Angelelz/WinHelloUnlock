@@ -12,7 +12,7 @@ using KeePassLib.Serialization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using KeePassLib.Security;
-using System.Linq;
+using System.Windows.Forms;
 
 namespace WinHelloUnlock
 {
@@ -21,6 +21,7 @@ namespace WinHelloUnlock
         internal static KeyCredentialCreationOption option = KeyCredentialCreationOption.FailIfExists;
         internal static BinaryStringEncoding encoding = BinaryStringEncoding.Utf8;
         private static Assembly assembly = Assembly.GetExecutingAssembly();
+        private static CompositeKey ck = null;
 
         /// <summary>
         /// Checks to see if Passport is ready to be used.
@@ -373,9 +374,18 @@ namespace WinHelloUnlock
                 if (compositeKey != null)
                 {
                     if (Library.CheckMasterKey(ioInfo, compositeKey))
-                        WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, compositeKey, true);
-                    else
-                        await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
+                    {
+                        KeePass.Program.MainForm.OpenDatabase(ioInfo, compositeKey, true);
+                        string openedDBPath = WinHelloUnlockExt.Host.MainWindow.ActiveDatabase.IOConnectionInfo.Path;
+                        if (openedDBPath != ioInfo.Path
+                            && WinHelloUnlockExt.updateCheckForm != null)
+                        {
+                            ck = compositeKey;
+                            WinHelloUnlockExt.updateCheckForm.FormClosed += (object sender, FormClosedEventArgs e) =>
+                                UpdateFormClosedEventHandler(ioInfo);
+                        }
+                    }
+                    else await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
 
                     compositeKey = null;
                     
@@ -387,6 +397,15 @@ namespace WinHelloUnlock
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
             }
+        }
+
+        internal static void UpdateFormClosedEventHandler(IOConnectionInfo ioInfo)
+        {
+            WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, ck, true);
+            WinHelloUnlockExt.updateCheckForm.FormClosed -= (object sender, FormClosedEventArgs e) =>
+                UpdateFormClosedEventHandler(ioInfo);
+            ck = null;
+            WinHelloUnlockExt.updateCheckForm = null;
         }
 
     }
