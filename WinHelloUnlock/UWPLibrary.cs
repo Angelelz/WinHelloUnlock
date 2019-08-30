@@ -18,9 +18,13 @@ namespace WinHelloUnlock
 {
     public static class UWPLibrary
     {
+        // Supposedly global setting for KeyCredential creation. Not really used. Maybe delete?
         internal static KeyCredentialCreationOption option = KeyCredentialCreationOption.FailIfExists;
+
+        // Grobal setting for encoding binary to string
         internal static BinaryStringEncoding encoding = BinaryStringEncoding.Utf8;
-        private static Assembly assembly = Assembly.GetExecutingAssembly();
+
+        // Grobal CompositeKey used to unlock the database when Update Windows auto opens
         private static CompositeKey ck = null;
 
         /// <summary>
@@ -202,6 +206,7 @@ namespace WinHelloUnlock
         /// <returns>Encrypted text.</returns>
         internal static async Task<string> Encrypt(ProtectedString ps, KeyCredentialRetrievalResult rResult)
         {
+            Assembly assembly = Assembly.GetExecutingAssembly();
             var attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
             var id = attribute.Value; // Any text can be used, it will be signed with the KeyCredential to encrypt the string
             IBuffer buffMsg = CryptographicBuffer.ConvertStringToBinary(id, encoding); // converted to an IBuffer
@@ -232,6 +237,7 @@ namespace WinHelloUnlock
         internal static async Task<ProtectedString> Decrypt(string strProtected, KeyCredentialRetrievalResult rResult)
         {
             // The same text must be used to decrypt the data
+            Assembly assembly = Assembly.GetExecutingAssembly();
             var attribute = (GuidAttribute)assembly.GetCustomAttributes(typeof(GuidAttribute), true)[0];
             var id = attribute.Value;
             IBuffer buffMsg = CryptographicBuffer.ConvertStringToBinary(id, encoding);
@@ -266,7 +272,7 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Must be executed as background process, right before calling Windows Security Prompt.
+        /// Must be executed as background task, right before calling Windows Security Prompt.
         /// </summary>
         internal static void EnsureForeground()
         {
@@ -290,7 +296,7 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
-        /// Check if WinHelloUnlock data exists for the given Database path.
+        /// Check if WinHelloUnlock data exists for a given Database path.
         /// </summary>
         /// <param name="dbPath">Database path.</param>
         /// <returns>True if a KeyCredential and a PasswordCredential exist for the Database path.</returns>
@@ -365,40 +371,59 @@ namespace WinHelloUnlock
             string dbPath = Library.CharChange(ioInfo.Path);
             
             KeyCredentialRetrievalResult retrievalResult = await OpenCredential(dbPath);
-            if (retrievalResult.Status == KeyCredentialStatus.Success)
+            if (retrievalResult.Status == KeyCredentialStatus.Success) // If credential is successfully retrieved
             {
-                KeyList keyList = await RetrieveKeys(dbPath, retrievalResult);
+                KeyList keyList = await RetrieveKeys(dbPath, retrievalResult); 
 
                 CompositeKey compositeKey = Library.ConvertToComposite(keyList);
+
+                // Composite Key is retrieved so the number of tries is augmented
                 ++WinHelloUnlockExt.tries;
-                if (compositeKey != null)
+
+                if (compositeKey != null) // If there is actually a composite key
                 {
-                    if (Library.CheckMasterKey(ioInfo, compositeKey))
+                    if (Library.CheckMasterKey(ioInfo, compositeKey)) // If the composite key actually unlocks the database
                     {
+                        // Unlock the database
                         KeePass.Program.MainForm.OpenDatabase(ioInfo, compositeKey, true);
+
+                        // Check if the database was actually opened
                         string openedDBPath = WinHelloUnlockExt.Host.MainWindow.ActiveDatabase.IOConnectionInfo.Path;
-                        if (openedDBPath != ioInfo.Path
-                            && WinHelloUnlockExt.updateCheckForm != null)
+                        if (openedDBPath != ioInfo.Path                     // If opened DB is not the same we are trying to open
+                            && WinHelloUnlockExt.updateCheckForm != null)   // and UpdateCheckForm is opened then the database was not opened because of that
                         {
+                            // Using a global Composite key to be able to erase it later
                             ck = compositeKey;
+
+                            // Register an event handler to be able to unlock the database after updateCheckForm is closed
                             WinHelloUnlockExt.updateCheckForm.FormClosed += (object sender, FormClosedEventArgs e) =>
                                 UpdateFormClosedEventHandler(ioInfo);
                         }
                     }
-                    else await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
+                    else // If composite key did not unlock the database prompt the user to delete the credentials
+                        await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
+                }
+                else // If compositeKey is null, open regular unlock prompt to unlock the database
+                    WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
 
-                    compositeKey = null;
-                    
-                    keyList = new KeyList(null, null);
-                } else WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
+                // Delete composite key data
+                compositeKey = null;
+
+                // Delete KeyList object
+                keyList = new KeyList(null, null);
             }
             else
             {
+                // If credentials were not successfully retrieved inform the user and open regular unlock prompt
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
             }
         }
 
+        /// <summary>
+        /// Event Handler that unlocks the database after the UpdateCheckForm is closed
+        /// </summary>
+        /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
         internal static void UpdateFormClosedEventHandler(IOConnectionInfo ioInfo)
         {
             WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, ck, true);

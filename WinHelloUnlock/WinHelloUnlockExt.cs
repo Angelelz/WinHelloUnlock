@@ -15,6 +15,8 @@ namespace WinHelloUnlock
     public class WinHelloUnlockExt : Plugin
     {
         private static IPluginHost host = null;
+
+        // Global settings and constants
         public const string ShortProductName = "HelloUnlock";
         public const string ProductName = "WinHelloUnlock";
         public static string dbName;
@@ -78,36 +80,40 @@ namespace WinHelloUnlock
         private async void FileOpenedHandler(object sender, FileOpenedEventArgs e)
         {
             var ioInfo = e.Database.IOConnectionInfo;
-            if (e.Database.CustomData.Get(ProductName) == null)
+            if (e.Database.CustomData.Get(ProductName) == null) // If there is no CustomData in this database
             {
+                // Create CustomData to save global setting to enable or disable the plugin
                 e.Database.CustomData.Set(ProductName, "true");
                 e.Database.Modified = true;
+                
+                // Try to save the database
                 try { e.Database.Save(null); }
                 catch { }
             }
 
-            if (e.Database.CustomData.Get(ProductName) == "true") enablePlugin = true;
-            if (e.Database.CustomData.Get(ProductName) == "false")
-            {
-                enablePlugin = false;
-                dbName = Library.CharChange(ioInfo.Path);
-                database = e.Database;
-                return;
-            }
-            
+            // Global settings to be used in the Options Panel
             dbName = Library.CharChange(ioInfo.Path);
             database = e.Database;
 
-            bool firstTime = await UWPLibrary.FirstTime(dbName);
-
-            if (firstTime)
+            if (e.Database.CustomData.Get(ProductName) == "true") enablePlugin = true;
+            if (e.Database.CustomData.Get(ProductName) == "false") // if plugin is disabled for the database
             {
+                enablePlugin = false;
+                return; // Don't do anything else
+            }
+
+            if (await UWPLibrary.FirstTime(dbName)) // If the database has no credentials saved
+            {
+                // Ask the user if he/she wants to configure the plugin
                 bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
                     WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
 
+                // In case he/she wants, create the credentials
                 if (yesOrNo)
                     await UWPLibrary.CreateHelloData(dbName);
             }
+
+            // Set global settings back to default
             tries = 0;
             opened = true;
         }
@@ -119,7 +125,7 @@ namespace WinHelloUnlock
 		/// <param name="e"></param>
 		private async void WindowAddedHandler(object sender, GwmWindowEventArgs e)
         {
-            
+            // If a database is attempted to be unlocked
             if (e.Form is KeyPromptForm keyPromptForm)
             {
                 var fieldInfo = keyPromptForm.GetType().GetField("m_ioInfo", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -127,14 +133,17 @@ namespace WinHelloUnlock
                 string dbName = Library.CharChange(ioInfo.Path);
                 bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
 
+                // if the database has credentials saved and Windows Hello is available
                 if (!await UWPLibrary.FirstTime(dbName) && isHelloAvailable)
                 {
+                    // If there is no other Windows Hello Prompt opened
                     if (opened)
                     {
                         opened = false;
                         Library.UnlockDatabase(ioInfo, keyPromptForm);
                     }
-                    else
+                    else // If there is another Windows Hello Prompt opened, just close this regular prompt
+                        // This is usefull for when there is a double attempt to unlock the database by some plugins (ChromeIPass)
                         Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                 }
                 else if (!await UWPLibrary.FirstTime(dbName))
@@ -142,10 +151,13 @@ namespace WinHelloUnlock
                     MessageService.ShowInfo("This Database has credential data saved. Enable Windows Hello to use.");
                 }
             }
+
+            // If the Options window is opened
             if (e.Form is OptionsForm optionsForm)
             {
-                if (!host.MainWindow.ActiveDatabase.IsOpen) return;
-                optionsForm.Shown += delegate (object sender2, EventArgs e2)
+                if (!host.MainWindow.ActiveDatabase.IsOpen) return; //  If there is no database opened, don't do anything
+
+                optionsForm.Shown += (object sender2, EventArgs e2) =>
                 {
                     
                     try
@@ -158,10 +170,18 @@ namespace WinHelloUnlock
                     }
                 };
             }
+
+            // If the Update Check Window is opened.
+            // This is used because the Update Check Window prevents the a database from being opened
             if (e.Form is UpdateCheckForm ucf && !opened)
                 WinHelloUnlockExt.updateCheckForm = ucf;
         }
 
+        /// <summary>
+		/// Used to Update global settings when the active database is changed
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
         private void ActiveDocChanged(object sender, EventArgs e)
         {
             database = Host.MainWindow.ActiveDatabase;
@@ -169,6 +189,11 @@ namespace WinHelloUnlock
             dbName = Library.CharChange(ioInfo.Path);
         }
 
+        /// <summary>
+		/// Used to detect if the master key has been changed
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
         private async void OnSavedDB(Object sender, FileSavedEventArgs args)
         {
             var db = args.Database;
