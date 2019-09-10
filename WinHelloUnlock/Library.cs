@@ -242,11 +242,20 @@ namespace WinHelloUnlock
             }
         }
 
+        /// <summary>
+        /// Changes '/' for '\' because Windows Hello throws an error when '/' is in the name of the credential
+        /// </summary>
+        /// <param name="name">String to replace the character.</param>
         internal static string CharChange(string name)
         {
             return name.Replace('/', '\\');
         }
 
+        /// <summary>
+        /// Checks whether the provided master key actually unlocks the database
+        /// </summary>
+        /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
+        /// <param name="key">Master Key to check.</param>
         internal static bool CheckMasterKey(IOConnectionInfo ioinfo, CompositeKey key)
         {
             PwDatabase db = new PwDatabase();
@@ -260,13 +269,19 @@ namespace WinHelloUnlock
             catch(Exception) { return false; }
         }
 
+        /// <summary>
+        /// When the plugin detects a change in the MasterKey, it uses this method to prompt the user to update or delete the data
+        /// </summary>
+        /// <param name="ioInfo">IOConnectionInfo that represents the database.</param>
+        /// <param name="dbPath">Name of the credential to update or delete.</param>
+        /// <param name="opening">If the masterkey change was detected during database unlock use true.</param>
         internal static async Task HandleMasterKeyChange(IOConnectionInfo ioInfo, string dbPath, bool opening)
         {
             if (opening)
             {
                 string str = WinHelloUnlockExt.ProductName + " could not unlock this database." +
                                 " MasterKey must have changed. Delete " + WinHelloUnlockExt.ProductName + " data?";
-                if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
+                if (MessageService.AskYesNo(str, WinHelloUnlockExt.ProductName))
                     UWPLibrary.DeleteHelloData(dbPath);
                 WinHelloUnlockExt.opened = true;
                 WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
@@ -275,7 +290,7 @@ namespace WinHelloUnlock
             {
                 string str = "A change in MasterKey has been detected. Do you want to update " +
                             WinHelloUnlockExt.ProductName + " data?";
-                if (MessageService.AskYesNo(str, WinHelloUnlockExt.ShortProductName))
+                if (MessageService.AskYesNo(str, WinHelloUnlockExt.ProductName))
                 {
                     UWPLibrary.DeleteHelloData(dbPath);
                     await UWPLibrary.CreateHelloData(dbPath);
@@ -285,6 +300,9 @@ namespace WinHelloUnlock
 
     }
 
+    /// <summary>
+    /// Object to pass arround that contains Masterkey information
+    /// </summary>
     public class KeyList
     {
         private readonly string[] _kName;

@@ -1,3 +1,3 @@
-﻿# [WinHelloUnlock v1.3.1](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v1.3.1)
+﻿# [WinHelloUnlock v1.3.2](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v1.3.2)
 
-- Fix [#25](https://github.com/Angelelz/WinHelloUnlock/issues/25). (For real this time) Unlock failure when KeePass checks for updates on database unlock.
+- Fix [#28](https://github.com/Angelelz/WinHelloUnlock/issues/28). Not neccessary to ask for Key update on every database save event.
