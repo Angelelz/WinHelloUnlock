@@ -25,7 +25,7 @@ namespace WinHelloUnlock
         internal static BinaryStringEncoding encoding = BinaryStringEncoding.Utf8;
 
         // Grobal CompositeKey used to unlock the database when Update Windows auto opens
-        private static CompositeKey ck = null;
+        internal static CompositeKey ck = null;
 
         /// <summary>
         /// Checks to see if Passport is ready to be used.
@@ -346,6 +346,7 @@ namespace WinHelloUnlock
                     if (resultSave == "Success")
                     {
                         MessageService.ShowInfo("Database Keys saved successfuly");
+                        UWPLibrary.ck = KeePass.Program.MainForm.ActiveDatabase.MasterKey;
                         return true;
                     }
                     else MessageService.ShowWarning("Error saving the composite key: " + resultSave);
@@ -392,7 +393,7 @@ namespace WinHelloUnlock
                         if (openedDBPath != ioInfo.Path                     // If opened DB is not the same we are trying to open
                             && WinHelloUnlockExt.updateCheckForm != null)   // and UpdateCheckForm is opened then the database was not opened because of that
                         {
-                            // Using a global Composite key to be able to erase it later
+                            // Using a global Composite key to test for changes
                             ck = compositeKey;
 
                             // Register an event handler to be able to unlock the database after updateCheckForm is closed
@@ -429,7 +430,6 @@ namespace WinHelloUnlock
             WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, ck, true);
             WinHelloUnlockExt.updateCheckForm.FormClosed -= (object sender, FormClosedEventArgs e) =>
                 UpdateFormClosedEventHandler(ioInfo);
-            ck = null;
             WinHelloUnlockExt.updateCheckForm = null;
         }
 
