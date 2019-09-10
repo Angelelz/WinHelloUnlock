@@ -197,9 +197,10 @@ namespace WinHelloUnlock
         private async void OnSavedDB(Object sender, FileSavedEventArgs args)
         {
             var db = args.Database;
+            var ck = db.MasterKey;
             var ioInfo = db.IOConnectionInfo;
             string dbPath = Library.CharChange(ioInfo.Path);
-            if (!await UWPLibrary.FirstTime(dbPath) && await UWPLibrary.IsHelloAvailable())
+            if (!await UWPLibrary.FirstTime(dbPath) && await UWPLibrary.IsHelloAvailable() && !Library.CheckMasterKey(ioInfo, ck))
                 await Library.HandleMasterKeyChange(ioInfo, dbPath, false);
         }
 
