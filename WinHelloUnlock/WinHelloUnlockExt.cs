@@ -94,6 +94,7 @@ namespace WinHelloUnlock
             // Global settings to be used in the Options Panel
             dbName = Library.CharChange(ioInfo.Path);
             database = e.Database;
+            UWPLibrary.ck = database.MasterKey;
 
             if (e.Database.CustomData.Get(ProductName) == "true") enablePlugin = true;
             if (e.Database.CustomData.Get(ProductName) == "false") // if plugin is disabled for the database
@@ -187,7 +188,8 @@ namespace WinHelloUnlock
             database = Host.MainWindow.ActiveDatabase;
             var ioInfo = database.IOConnectionInfo;
             dbName = Library.CharChange(ioInfo.Path);
-            UWPLibrary.ck = database.MasterKey;
+            if (database.MasterKey != null)
+                UWPLibrary.ck = database.MasterKey;
         }
 
         /// <summary>
