@@ -73,6 +73,7 @@ The plugin integrates itself into the KeePass settings dialog.
 Available settings:
 
 * Enable or disable the plugin for this particular database. If you disable it, you will not be asked to set WinHelloUnlock every time you unlock your database.
+* Re-lock databases after unlocking them to perform an AutoType.
 * Create or delete WinHelloUnlock data for this particular database.
 
 Notes
