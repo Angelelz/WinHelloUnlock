@@ -12,6 +12,7 @@ using KeePassLib.Serialization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using KeePassLib.Security;
+using KeePass.Forms;
 using System.Windows.Forms;
 
 namespace WinHelloUnlock
@@ -367,8 +368,9 @@ namespace WinHelloUnlock
         /// Performs the actual unlock of the database
         /// </summary>
         /// <param name="ioInfo">IOConnectionInfo that represents the Database.</param>
-        internal static async Task UnlockDatabase(IOConnectionInfo ioInfo)
+        internal static async Task UnlockDatabase(IOConnectionInfo ioInfo, KeyPromptForm keyPromptForm)
         {
+            
             string dbPath = Library.CharChange(ioInfo.Path);
             
             KeyCredentialRetrievalResult retrievalResult = await OpenCredential(dbPath);
@@ -386,7 +388,7 @@ namespace WinHelloUnlock
                     if (Library.CheckMasterKey(ioInfo, compositeKey)) // If the composite key actually unlocks the database
                     {
                         // Unlock the database
-                        KeePass.Program.MainForm.OpenDatabase(ioInfo, compositeKey, true);
+                        Unlock(keyPromptForm, compositeKey);
 
                         // Check if the database was actually opened
                         string openedDBPath = WinHelloUnlockExt.Host.MainWindow.ActiveDatabase.IOConnectionInfo.Path;
@@ -400,12 +402,33 @@ namespace WinHelloUnlock
                             WinHelloUnlockExt.updateCheckForm.FormClosed += (object sender, FormClosedEventArgs e) =>
                                 UpdateFormClosedEventHandler(ioInfo);
                         }
+
+                        if (WinHelloUnlockExt.isAutoTyping && WinHelloUnlockExt.LockAfterAutoType)
+                        {
+
+                            var _ = Task.Factory.StartNew(() => LockAfterAutoType());
+                            //MessageService.ShowInfo("autotyping");
+                        }
+
                     }
                     else // If composite key did not unlock the database prompt the user to delete the credentials
                         await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
                 }
                 else // If compositeKey is null, open regular unlock prompt to unlock the database
-                    WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
+                {
+                    if (WinHelloUnlockExt.secureChaged)
+                    {
+                        KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
+                        WinHelloUnlockExt.secureChaged = false;
+                        Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                        var _ = Task.Factory.StartNew(() => KeePass.Program.MainForm.OpenDatabase(ioInfo, null, true));
+                    }
+                    else
+                    {
+                        keyPromptForm.Visible = true;
+                        keyPromptForm.Opacity = 1;
+                    }
+                }
 
                 // Delete composite key data
                 compositeKey = null;
@@ -417,8 +440,62 @@ namespace WinHelloUnlock
             {
                 // If credentials were not successfully retrieved inform the user and open regular unlock prompt
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                WinHelloUnlockExt.Host.MainWindow.OpenDatabase(ioInfo, null, false);
+                if (WinHelloUnlockExt.secureChaged)
+                {
+                    KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
+                    WinHelloUnlockExt.secureChaged = false;
+                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
+                    var _ = Task.Factory.StartNew(() => KeePass.Program.MainForm.OpenDatabase(ioInfo, null, true));
+                }
+                else
+                {
+                    keyPromptForm.Visible = true;
+                    keyPromptForm.Opacity = 1;
+                }
+
             }
+        }
+
+        /// <summary>
+        /// Must be executed as background task.
+        /// </summary>
+        internal static void LockAfterAutoType()
+        {
+            var mf = KeePass.Program.MainForm;
+            var iat = (bool)mf.GetType().GetField("m_bIsAutoTyping", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(mf);
+            while (iat)
+            {
+                iat = (bool)mf.GetType().GetField("m_bIsAutoTyping", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(mf);
+                if (!iat)
+                {
+                    mf.Invoke((MethodInvoker)delegate
+                    {
+                        //perform on the UI thread
+                        KeePass.Program.MainForm.LockAllDocuments();
+                    });
+
+                }
+                Thread.Sleep(10);
+            }
+        }
+
+        /// <summary>
+        /// Unlocks the database using KeyPromptForm
+        /// </summary>
+        internal static void Unlock(KeyPromptForm keyPromptForm, CompositeKey compositeKey)
+        {
+            try
+            {
+                var fieldInfo = keyPromptForm.GetType().GetField("m_pKey", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (fieldInfo != null)
+                    fieldInfo.SetValue(keyPromptForm, compositeKey);
+                //keyPromptForm.Visible = false;
+                //keyPromptForm.Opacity = 1;
+
+                keyPromptForm.DialogResult = DialogResult.OK;
+                keyPromptForm.Close();
+            }
+            catch (Exception) { }
         }
 
         /// <summary>

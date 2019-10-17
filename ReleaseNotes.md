@@ -1,3 +1,4 @@
-﻿# [WinHelloUnlock v1.3.2.1](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v1.3.2.1)
+﻿# [WinHelloUnlock v1.4](https://github.com/Angelelz/WinHelloUnlock/releases/tag/v1.4)
 
-- Minor Fix [#28](https://github.com/Angelelz/WinHelloUnlock/issues/28). Change handling of #28 when changing the Active Database.
+- Fix [#31](https://github.com/Angelelz/WinHelloUnlock/issues/31). Performing AutoType after unlocking the database with that goal.
+- Related to [#31](https://github.com/Angelelz/WinHelloUnlock/issues/31). Added option to Re-lock databases after unlocking them to perform AutoType.

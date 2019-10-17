@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Drawing;
 using System.Diagnostics;
 using KeePassLib;
+using KeePass.Util;
 using KeePassLib.Utility;
 using KeePassLib.Serialization;
 
@@ -24,6 +25,9 @@ namespace WinHelloUnlock
         public static bool enablePlugin = false;
         public static int tries = 0;
         public static bool opened = true;
+        public static bool secureChaged = false;
+        public static bool isAutoTyping = false;
+        public static bool LockAfterAutoType = false;
         public static UpdateCheckForm updateCheckForm = null;
 
         public static IPluginHost Host
@@ -95,6 +99,8 @@ namespace WinHelloUnlock
             dbName = Library.CharChange(ioInfo.Path);
             database = e.Database;
             UWPLibrary.ck = database.MasterKey;
+            if (e.Database.CustomData.Get(ProductName + "AT") == "true") LockAfterAutoType = true;
+            else LockAfterAutoType = false;
 
             if (e.Database.CustomData.Get(ProductName) == "true") enablePlugin = true;
             if (e.Database.CustomData.Get(ProductName) == "false") // if plugin is disabled for the database
@@ -129,6 +135,11 @@ namespace WinHelloUnlock
             // If a database is attempted to be unlocked
             if (e.Form is KeyPromptForm keyPromptForm)
             {
+                keyPromptForm.Opacity = 0;
+                keyPromptForm.Visible = false;
+                var mf = KeePass.Program.MainForm;
+                isAutoTyping = (bool)mf.GetType().GetField("m_bIsAutoTyping", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(mf);
+
                 var fieldInfo = keyPromptForm.GetType().GetField("m_ioInfo", BindingFlags.Instance | BindingFlags.NonPublic);
                 var ioInfo = fieldInfo.GetValue(keyPromptForm) as IOConnectionInfo;
                 string dbName = Library.CharChange(ioInfo.Path);
@@ -141,6 +152,7 @@ namespace WinHelloUnlock
                     if (opened)
                     {
                         opened = false;
+                        
                         Library.UnlockDatabase(ioInfo, keyPromptForm);
                     }
                     else // If there is another Windows Hello Prompt opened, just close this regular prompt
@@ -186,6 +198,8 @@ namespace WinHelloUnlock
         private void ActiveDocChanged(object sender, EventArgs e)
         {
             database = Host.MainWindow.ActiveDatabase;
+            if (database.CustomData.Get(ProductName + "AT") == "true") LockAfterAutoType = true;
+            else LockAfterAutoType = false;
             var ioInfo = database.IOConnectionInfo;
             dbName = Library.CharChange(ioInfo.Path);
             if (database.MasterKey != null)

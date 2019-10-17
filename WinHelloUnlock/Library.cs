@@ -27,6 +27,9 @@ namespace WinHelloUnlock
 
         [DllImport("user32.dll")]
         internal static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        
+        [DllImport("User32.dll", SetLastError = true)]
+        public static extern int SendMessage(IntPtr hWnd, Int32 msg, Int32 wParam, Int32 lParam);
 
         /// <summary>
         /// Convert the composite key to a KeyList class
@@ -190,26 +193,54 @@ namespace WinHelloUnlock
             // Only one try is allowed
             if (WinHelloUnlockExt.tries < 1)
             {
-                CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
                 if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
                 {
-                    // It is necceary to start a new thread when secure desktop is enabled
-                    await Task.Factory.StartNew(() =>
-                    {
-                        Thread.Yield();
-                        MainForm mainForm = WinHelloUnlockExt.Host.MainWindow;
-                        Action action = async () => await UWPLibrary.UnlockDatabase(ioInfo);
-                        mainForm.Invoke(action);
-                    }).ContinueWith(_ => ++WinHelloUnlockExt.tries);
+                    WinHelloUnlockExt.secureChaged = true;
+
+                    var _ = Task.Factory.StartNew(() => CloseWarning());
+                    KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
+
+                    UWPLibrary.Unlock(keyPromptForm, new CompositeKey());
                 }
                 else
                 {
-                    await UWPLibrary.UnlockDatabase(ioInfo);
+
+                    await UWPLibrary.UnlockDatabase(ioInfo, keyPromptForm);
                     ++WinHelloUnlockExt.tries;
+                    if (WinHelloUnlockExt.secureChaged)
+                    {
+                        KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
+                        WinHelloUnlockExt.secureChaged = false;
+                    }
                 }
-                
+
             }
+            else
+            {
+                keyPromptForm.Visible = true;
+                keyPromptForm.Opacity = 1;
+            }
+
             WinHelloUnlockExt.opened = true;
+        }
+
+        /// <summary>
+        /// Must be executed as background task.
+        /// </summary>
+        internal static void CloseWarning()
+        {
+            IntPtr ptrFF = Library.FindWindow("#32770", "KeePass");
+            while (true)
+            {
+                if (ptrFF != IntPtr.Zero)
+                {
+                    SendMessage(ptrFF, 0x0010, 0, 0);
+
+                    break;
+                }
+                else ptrFF = Library.FindWindow("#32770", "KeePass");
+                Thread.Sleep(10);
+            }
         }
 
         /// <summary>
