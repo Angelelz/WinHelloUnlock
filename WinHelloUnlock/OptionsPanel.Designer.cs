@@ -33,6 +33,7 @@
             this.deleteButton = new System.Windows.Forms.Button();
             this.createButton = new System.Windows.Forms.Button();
             this.settingsGroupBox = new System.Windows.Forms.GroupBox();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.checkBox = new System.Windows.Forms.CheckBox();
             this.settingsGroupBox.SuspendLayout();
@@ -65,7 +66,7 @@
             // 
             this.deleteButton.AccessibleName = "";
             this.deleteButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.deleteButton.Location = new System.Drawing.Point(670, 275);
+            this.deleteButton.Location = new System.Drawing.Point(670, 313);
             this.deleteButton.Margin = new System.Windows.Forms.Padding(7);
             this.deleteButton.Name = "deleteButton";
             this.deleteButton.Size = new System.Drawing.Size(568, 51);
@@ -77,7 +78,7 @@
             // createButton
             // 
             this.createButton.AccessibleName = "";
-            this.createButton.Location = new System.Drawing.Point(21, 275);
+            this.createButton.Location = new System.Drawing.Point(21, 313);
             this.createButton.Margin = new System.Windows.Forms.Padding(7);
             this.createButton.Name = "createButton";
             this.createButton.Size = new System.Drawing.Size(568, 51);
@@ -88,6 +89,7 @@
             // 
             // settingsGroupBox
             // 
+            this.settingsGroupBox.Controls.Add(this.checkBox1);
             this.settingsGroupBox.Controls.Add(this.label1);
             this.settingsGroupBox.Controls.Add(this.checkBox);
             this.settingsGroupBox.Controls.Add(this.createButton);
@@ -97,10 +99,22 @@
             this.settingsGroupBox.Margin = new System.Windows.Forms.Padding(7);
             this.settingsGroupBox.Name = "settingsGroupBox";
             this.settingsGroupBox.Padding = new System.Windows.Forms.Padding(7);
-            this.settingsGroupBox.Size = new System.Drawing.Size(1260, 362);
+            this.settingsGroupBox.Size = new System.Drawing.Size(1260, 394);
             this.settingsGroupBox.TabIndex = 10;
             this.settingsGroupBox.TabStop = false;
             this.settingsGroupBox.Text = "WinHelloUnlock Settings";
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(21, 244);
+            this.checkBox1.Margin = new System.Windows.Forms.Padding(7);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(550, 33);
+            this.checkBox1.TabIndex = 10;
+            this.checkBox1.Text = "Re-lock databases after unlocking for AutoType";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
             // label1
             // 
@@ -148,5 +162,6 @@
         private System.Windows.Forms.GroupBox settingsGroupBox;
         private System.Windows.Forms.CheckBox checkBox;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }

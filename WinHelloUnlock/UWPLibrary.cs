@@ -402,6 +402,14 @@ namespace WinHelloUnlock
                             WinHelloUnlockExt.updateCheckForm.FormClosed += (object sender, FormClosedEventArgs e) =>
                                 UpdateFormClosedEventHandler(ioInfo);
                         }
+
+                        if (WinHelloUnlockExt.isAutoTyping && WinHelloUnlockExt.LockAfterAutoType)
+                        {
+
+                            var _ = Task.Factory.StartNew(() => LockAfterAutoType());
+                            //MessageService.ShowInfo("autotyping");
+                        }
+
                     }
                     else // If composite key did not unlock the database prompt the user to delete the credentials
                         await Library.HandleMasterKeyChange(ioInfo, dbPath, true);
@@ -445,6 +453,29 @@ namespace WinHelloUnlock
                     keyPromptForm.Opacity = 1;
                 }
 
+            }
+        }
+
+        /// <summary>
+        /// Must be executed as background task.
+        /// </summary>
+        internal static void LockAfterAutoType()
+        {
+            var mf = KeePass.Program.MainForm;
+            var iat = (bool)mf.GetType().GetField("m_bIsAutoTyping", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(mf);
+            while (iat)
+            {
+                iat = (bool)mf.GetType().GetField("m_bIsAutoTyping", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(mf);
+                if (!iat)
+                {
+                    mf.Invoke((MethodInvoker)delegate
+                    {
+                        //perform on the UI thread
+                        KeePass.Program.MainForm.LockAllDocuments();
+                    });
+
+                }
+                Thread.Sleep(10);
             }
         }
 

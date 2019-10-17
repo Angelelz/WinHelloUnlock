@@ -22,6 +22,7 @@ namespace WinHelloUnlock
             db = WinHelloUnlockExt.dbName;
             RefreshOptions();
             checkBox.Checked = enabled;
+            checkBox1.Checked = WinHelloUnlockExt.LockAfterAutoType;
         }
 
         /// <summary>Register for the FormClosing event.</summary>
@@ -36,26 +37,32 @@ namespace WinHelloUnlock
                 {
                     if (ParentForm.DialogResult == DialogResult.OK)
                     {
+                        WinHelloUnlockExt.LockAfterAutoType = checkBox1.Checked;
+                        if (checkBox1.Checked) WinHelloUnlockExt.database.CustomData.Set(WinHelloUnlockExt.ProductName + "AT", "true");
+                        else WinHelloUnlockExt.database.CustomData.Set(WinHelloUnlockExt.ProductName + "AT", "false");
+
                         if (onOpenEnabled != checkBox.Checked.ToString())
                         {
                             if (checkBox.Checked)
                             {
                                 WinHelloUnlockExt.database.CustomData.Set(WinHelloUnlockExt.ProductName, "true");
                                 WinHelloUnlockExt.enablePlugin = true;
-                                WinHelloUnlockExt.database.Modified = true;
-                                try { WinHelloUnlockExt.database.Save(null); }
-                                catch { }
+                                
                             }
                             else
                             {
                                 if (deleteButton.Enabled) UWPLibrary.DeleteHelloData(WinHelloUnlockExt.dbName);
                                 WinHelloUnlockExt.database.CustomData.Set(WinHelloUnlockExt.ProductName, "false");
                                 WinHelloUnlockExt.enablePlugin = false;
-                                WinHelloUnlockExt.database.Modified = true;
-                                try { WinHelloUnlockExt.database.Save(null); }
-                                catch { }
                             }
+                            
+
                         }
+
+                        WinHelloUnlockExt.database.Modified = true;
+                        try { WinHelloUnlockExt.database.Save(null); }
+                        catch { }
+
                         //WinHelloUnlockExt.database.Save(null);
                     }
                 };
@@ -89,6 +96,7 @@ namespace WinHelloUnlock
             bool check = checkBox.Checked;
             first = Task.Run(() => UWPLibrary.FirstTime(db)).Result;
 
+            checkBox1.Enabled = check;
             createButton.Enabled = first && check;
             deleteButton.Enabled = !first;
             label1.Text = "";
@@ -118,7 +126,13 @@ namespace WinHelloUnlock
             //checkBox.Checked = enabled;
             createButton.Enabled = first && (enabled || checkBox.Checked);
             deleteButton.Enabled = !first;
+            //checkBox1.Checked = WinHelloUnlockExt.LockAfterAutoType;
+            checkBox1.Enabled = enabled;
         }
 
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }
