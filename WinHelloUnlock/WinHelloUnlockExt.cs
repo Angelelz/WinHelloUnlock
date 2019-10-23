@@ -162,6 +162,13 @@ namespace WinHelloUnlock
                 else if (!await UWPLibrary.FirstTime(dbName))
                 {
                     MessageService.ShowInfo("This Database has credential data saved. Enable Windows Hello to use.");
+                    keyPromptForm.Opacity = 1;
+                    keyPromptForm.Visible = true;
+                }
+                else
+                {
+                    keyPromptForm.Opacity = 1;
+                    keyPromptForm.Visible = true;
                 }
             }
 
