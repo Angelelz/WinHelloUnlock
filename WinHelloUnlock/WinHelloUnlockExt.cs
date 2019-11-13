@@ -111,13 +111,18 @@ namespace WinHelloUnlock
 
             if (await UWPLibrary.FirstTime(dbName)) // If the database has no credentials saved
             {
-                // Ask the user if he/she wants to configure the plugin
-                bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
+                bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
+
+                if (isHelloAvailable)
+                {
+                    // Ask the user if he/she wants to configure the plugin
+                    bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
                     WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
 
-                // In case he/she wants, create the credentials
-                if (yesOrNo)
-                    await UWPLibrary.CreateHelloData(dbName);
+                    // In case he/she wants, create the credentials
+                    if (yesOrNo)
+                        await UWPLibrary.CreateHelloData(dbName);
+                }
             }
 
             // Set global settings back to default
