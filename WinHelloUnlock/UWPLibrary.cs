@@ -350,7 +350,13 @@ namespace WinHelloUnlock
                         UWPLibrary.ck = KeePass.Program.MainForm.ActiveDatabase.MasterKey;
                         return true;
                     }
-                    else MessageService.ShowWarning("Error saving the composite key: " + resultSave);
+                    else
+                    {
+                        if (resultSave.Substring(0,20) == "Value cannot be null") MessageService.ShowWarning("Error saving the composite key: MasterKey was null." +
+                            " Verify that \"Remember master password (in encrypted form) of a database while it is open\" option under Tools/Options/Security" +
+                            " is enabled, then lock and unlock the database.");
+                        else MessageService.ShowWarning("Error saving the composite key: " + resultSave);
+                    }
                 }
                 else
                 {
