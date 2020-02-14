@@ -103,3 +103,8 @@ WinHelloUnlock vs KeePassWinHello
 By the time this plugin was created, KeePassWinHello did not have to option to remain active after Keepass is completly closed, so that was the main reason for it to be crated in the first place. I think they were working on that option, but I could not help them beacuse I did not understand most of their code (Way too advanced implementation for a beginner like me). I think they save the MasterKey info in memory, but WinHelloUnlock saves it encrypted to a Windows Password Credential.
 
 WinHelloUnlock does not implement a way for the credential to expire (like KeePassWinHello do), but implements a way for the credential to be deleted by the user.
+
+Donations?
+-------
+
+[Donations](https://www.paypal.me/Angelelz)
