@@ -121,7 +121,20 @@ namespace WinHelloUnlock
 
                     // In case he/she wants, create the credentials
                     if (yesOrNo)
+                    {
                         await UWPLibrary.CreateHelloData(dbName);
+                    }
+                    else
+                    {
+                        // user do not want to configure plugin, so disable it for next time
+                        e.Database.CustomData.Set(ProductName, "false");
+                        e.Database.Modified = true;
+                        enablePlugin = false;
+
+                        // Try to save the database
+                        try { e.Database.Save(null); }
+                        catch { }
+                    }
                 }
             }
 
