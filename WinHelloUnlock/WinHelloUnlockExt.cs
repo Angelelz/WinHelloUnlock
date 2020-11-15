@@ -83,46 +83,46 @@ namespace WinHelloUnlock
 		/// <param name="e"></param>
         private async void FileOpenedHandler(object sender, FileOpenedEventArgs e)
         {
-            var ioInfo = e.Database.IOConnectionInfo;
-            if (e.Database.CustomData.Get(ProductName) == null) // If there is no CustomData in this database
-            {
-                // Create CustomData to save global setting to enable or disable the plugin
-                e.Database.CustomData.Set(ProductName, "true");
-                e.Database.Modified = true;
-                
-                // Try to save the database
-                try { e.Database.Save(null); }
-                catch { }
-            }
+            database = e.Database;
+            var ioInfo = database.IOConnectionInfo;
 
             // Global settings to be used in the Options Panel
             dbName = Library.CharChange(ioInfo.Path);
-            database = e.Database;
             UWPLibrary.ck = database.MasterKey;
-            if (e.Database.CustomData.Get(ProductName + "AT") == "true") LockAfterAutoType = true;
-            else LockAfterAutoType = false;
 
-            if (e.Database.CustomData.Get(ProductName) == "true") enablePlugin = true;
-            if (e.Database.CustomData.Get(ProductName) == "false") // if plugin is disabled for the database
+            enablePlugin = database.CustomData.Get(ProductName) == "true" || database.CustomData.Get(ProductName) == null;
+            LockAfterAutoType = database.CustomData.Get(ProductName + "AT") == "true";
+
+            if (!enablePlugin) // if plugin is explicitely disabled for the database
             {
-                enablePlugin = false;
                 return; // Don't do anything else
             }
 
-            if (await UWPLibrary.FirstTime(dbName)) // If the database has no credentials saved
+            if (await UWPLibrary.IsHelloAvailable() && await UWPLibrary.FirstTime(dbName)) // If the database has no credentials saved
             {
-                bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
+                // Ask the user if he/she wants to configure the plugin
+                bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
+                WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
 
-                if (isHelloAvailable)
+                // In case he/she wants, create the credentials
+                if (yesOrNo)
                 {
-                    // Ask the user if he/she wants to configure the plugin
-                    bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
-                    WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
-
-                    // In case he/she wants, create the credentials
-                    if (yesOrNo)
-                        await UWPLibrary.CreateHelloData(dbName);
+                    await UWPLibrary.CreateHelloData(dbName);
+                    // Create CustomData to save global setting to enable the plugin
+                    database.CustomData.Set(ProductName, "true");
                 }
+                else
+                {
+                    // Create CustomData to save global setting to disable the plugin
+                    database.CustomData.Set(ProductName, "false");
+                    enablePlugin = false;
+                }
+
+                database.Modified = true;
+
+                // Try to save the database
+                try { database.Save(null); }
+                catch { }
             }
 
             // Set global settings back to default
