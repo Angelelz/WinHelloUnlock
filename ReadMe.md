@@ -51,7 +51,7 @@ After installation, open your database and unlock it using your composite key. U
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/ToUnlock.png" width=770/>
 
-When your database is unlocked, you will be asked if you want to set up WinHelloUnlock.
+When your database is unlocked, you will be asked if you want to set up WinHelloUnlock. If you cancel this dialog, the plugin will disable itself for this database and you will need to manually enable it in the options menu.
 
 <img src="https://raw.githubusercontent.com/Angelelz/WinHelloUnlock/master/WinHelloUnlock/Screenshots/FirstPrompt.png" width=381/>
 
