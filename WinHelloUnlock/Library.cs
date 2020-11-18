@@ -196,7 +196,7 @@ namespace WinHelloUnlock
                 if (KeePass.Program.Config.Security.MasterKeyOnSecureDesktop)
                 {
                     WinHelloUnlockExt.secureChaged = true;
-
+                    WinHelloUnlockExt.isMonitoring = true;
                     var _ = Task.Factory.StartNew(() => CloseWarning());
                     KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = false;
 
@@ -204,9 +204,10 @@ namespace WinHelloUnlock
                 }
                 else
                 {
-
+                    
                     await UWPLibrary.UnlockDatabase(ioInfo, keyPromptForm);
                     ++WinHelloUnlockExt.tries;
+                    
                     if (WinHelloUnlockExt.secureChaged)
                     {
                         KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
@@ -225,12 +226,34 @@ namespace WinHelloUnlock
         }
 
         /// <summary>
+        /// Reopens the KeyPromptForm whenever a change in MasterKeyOnSecureDesktop is made.
+        /// </summary>
+        internal static void ReopenKeyPromptForm(KeyPromptForm keyPromptForm)
+        {
+            if (WinHelloUnlockExt.secureChaged)
+            {
+                KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
+                WinHelloUnlockExt.secureChaged = false;
+
+                WinHelloUnlockExt.isMonitoring = true;
+                var _ = Task.Factory.StartNew(() => Library.CloseWarning());
+
+                UWPLibrary.Unlock(keyPromptForm, new CompositeKey());
+            }
+            else
+            {
+                keyPromptForm.Visible = true;
+                keyPromptForm.Opacity = 1;
+            }
+        }
+
+        /// <summary>
         /// Must be executed as background task.
         /// </summary>
         internal static void CloseWarning()
         {
             IntPtr ptrFF = Library.FindWindow("#32770", "KeePass");
-            while (true)
+            while (WinHelloUnlockExt.isMonitoring)
             {
                 if (ptrFF != IntPtr.Zero)
                 {

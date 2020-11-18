@@ -121,7 +121,8 @@ namespace WinHelloUnlock
                     MessageService.ShowWarning(initialString + "An unknown error occurred.");
                     break;
                 case (KeyCredentialStatus.UserCanceled):
-                    MessageService.ShowWarning(initialString + "The request was cancelled by the user.");
+                    //MessageService.ShowWarning(initialString + "The request was cancelled by the user.");
+                    //This closes #48
                     break;
                 case (KeyCredentialStatus.UserPrefersPassword):
                     MessageService.ShowWarning(initialString + "The user prefers to enter a password.");
@@ -422,18 +423,7 @@ namespace WinHelloUnlock
                 }
                 else // If compositeKey is null, open regular unlock prompt to unlock the database
                 {
-                    if (WinHelloUnlockExt.secureChaged)
-                    {
-                        KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
-                        WinHelloUnlockExt.secureChaged = false;
-                        Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-                        var _ = Task.Factory.StartNew(() => KeePass.Program.MainForm.OpenDatabase(ioInfo, null, true));
-                    }
-                    else
-                    {
-                        keyPromptForm.Visible = true;
-                        keyPromptForm.Opacity = 1;
-                    }
+                    Library.ReopenKeyPromptForm(keyPromptForm);
                 }
 
                 // Delete composite key data
@@ -446,18 +436,7 @@ namespace WinHelloUnlock
             {
                 // If credentials were not successfully retrieved inform the user and open regular unlock prompt
                 WinHelloErrors(retrievalResult.Status, "Error unlocking database: ");
-                if (WinHelloUnlockExt.secureChaged)
-                {
-                    KeePass.Program.Config.Security.MasterKeyOnSecureDesktop = true;
-                    WinHelloUnlockExt.secureChaged = false;
-                    Library.CloseFormWithResult(keyPromptForm, DialogResult.Cancel);
-                    var _ = Task.Factory.StartNew(() => KeePass.Program.MainForm.OpenDatabase(ioInfo, null, true));
-                }
-                else
-                {
-                    keyPromptForm.Visible = true;
-                    keyPromptForm.Opacity = 1;
-                }
+                Library.ReopenKeyPromptForm(keyPromptForm);
 
             }
         }
