@@ -28,6 +28,7 @@ namespace WinHelloUnlock
         public static bool secureChaged = false;
         public static bool isAutoTyping = false;
         public static bool LockAfterAutoType = false;
+        public static bool isMonitoring = false;
         public static UpdateCheckForm updateCheckForm = null;
 
         public static IPluginHost Host
@@ -140,6 +141,8 @@ namespace WinHelloUnlock
             // If a database is attempted to be unlocked
             if (e.Form is KeyPromptForm keyPromptForm)
             {
+                if (WinHelloUnlockExt.isMonitoring)
+                    WinHelloUnlockExt.isMonitoring = false;
                 keyPromptForm.Opacity = 0;
                 keyPromptForm.Visible = false;
                 var mf = KeePass.Program.MainForm;
@@ -149,7 +152,7 @@ namespace WinHelloUnlock
                 var ioInfo = fieldInfo.GetValue(keyPromptForm) as IOConnectionInfo;
                 string dbName = Library.CharChange(ioInfo.Path);
                 bool isHelloAvailable = await UWPLibrary.IsHelloAvailable();
-
+                
                 // if the database has credentials saved and Windows Hello is available
                 if (!await UWPLibrary.FirstTime(dbName) && isHelloAvailable)
                 {
