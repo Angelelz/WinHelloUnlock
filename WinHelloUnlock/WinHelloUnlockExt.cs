@@ -102,28 +102,31 @@ namespace WinHelloUnlock
             if (await UWPLibrary.IsHelloAvailable() && await UWPLibrary.FirstTime(dbName)) // If the database has no credentials saved
             {
                 // Ask the user if he/she wants to configure the plugin
-                bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
-                WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
-
-                // In case he/she wants, create the credentials
-                if (yesOrNo)
+                if (dbName != "")
                 {
-                    await UWPLibrary.CreateHelloData(dbName);
-                    // Create CustomData to save global setting to enable the plugin
-                    database.CustomData.Set(ProductName, "true");
-                }
-                else
-                {
-                    // Create CustomData to save global setting to disable the plugin
-                    database.CustomData.Set(ProductName, "false");
-                    enablePlugin = false;
-                }
+                    bool yesOrNo = MessageService.AskYesNo("Do You want to set " +
+                    WinHelloUnlockExt.ProductName + " for " + dbName + " now?", WinHelloUnlockExt.ShortProductName, true);
 
-                database.Modified = true;
+                    // In case he/she wants, create the credentials
+                    if (yesOrNo)
+                    {
+                        await UWPLibrary.CreateHelloData(dbName);
+                        // Create CustomData to save global setting to enable the plugin
+                        database.CustomData.Set(ProductName, "true");
+                    }
+                    else
+                    {
+                        // Create CustomData to save global setting to disable the plugin
+                        database.CustomData.Set(ProductName, "false");
+                        enablePlugin = false;
+                    }
 
-                // Try to save the database
-                try { database.Save(null); }
-                catch { }
+                    database.Modified = true;
+
+                    // Try to save the database
+                    try { database.Save(null); }
+                    catch { }
+                }
             }
 
             // Set global settings back to default
