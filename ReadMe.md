@@ -32,7 +32,7 @@ Systems Requirements
 
 This plugin relies on Windows Hello API and its [requirements][WinHelloReq].
 
-Tested on HP Spectre x360 with KeePass 2.42.1.
+Tested on HP Spectre x360 with KeePass 2.50
 
 [WinHelloReq]: https://www.microsoft.com/en-US/windows/windows-10-specifications
 
@@ -43,6 +43,21 @@ Place [WinHelloUnlock.dll][binLink] into `Plugins` folder in your KeePass instal
 *(by default is `C:\Program Files (x86)\KeePass Password Safe 2`)*.
 
 [binLink]: https://github.com/Angelelz/WinHelloUnlock/releases "Plugin Releases"
+
+Build from Source
+-----------------
+
+I've worked on this project on Microsoft Visual Studio. If you plan to clone and build yourself, I suggest you use the same. It's just easier to build a class library.
+After clonning the repo, open the .sln file and fix the keepass reference:
+- Download latest portable keepass build and unzip it in a folder of your choice
+- In the Solution Explorer in Visual Studio open `References`
+- Click `KeePass` and in its properties, change the path to the path of the portable KeePass you downloaded
+
+You would also probably need to add the following NuGet packages:
+- Microsoft.Windows.SDK.Contracts
+- System.Runtime.WindowsRuntime
+- System.Runtime.WindowsRuntime.UI.Xaml
+
 
 Setup
 -----
