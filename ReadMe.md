@@ -5,6 +5,18 @@
 [![Github All Releases](https://img.shields.io/github/downloads/Angelelz/WinHelloUnlock/total.svg)](https://github.com/Angelelz/WinHelloUnlock/releases)
 [![License](https://img.shields.io/github/license/Angelelz/WinHelloUnlock.svg)](https://github.com/Angelelz/WinHelloUnlock/blob/master/LICENSE)
 
+Unmaintained
+------------
+
+**WinHelloUnlock is retired and is no longer maintained.** I no longer use Windows or have a Windows computer to test this plugin, so I cannot verify fixes or compatibility with current versions of Windows and KeePass. I will not be providing further updates or support.
+
+If you need Windows Hello unlocking for KeePass 2, consider these projects:
+
+* [KeePassWinHello](https://github.com/sirAndros/KeePassWinHello) provides Windows Hello unlocking, including optional persistent key storage for unlocking between KeePass launches. This covers the functionality that originally motivated WinHelloUnlock.
+* [Supaahiro's fork of WinHelloUnlock](https://github.com/Supaahiro/WinHelloUnlock) has modernized the build to target .NET Framework 4.8. It is an independent fork, and I have not tested or verified its changes.
+
+The documentation below is retained for historical reference and describes the last released version.
+
 This plugin for [KeePass 2][KeePass] password manager is intended to conveniently Unlock your database using biometrics with [Windows Hello technology][WinHello].
 
 [KeePass]: https://keepass.info/
